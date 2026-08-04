@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: ip-breaker-wallet-service
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/ip_breaker_wallet?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:ipbreaker}
+    password: ${DB_PASSWORD:ip_breaker_dev_password}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  flyway:
+    locations: classpath:db/migration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+server:
+  shutdown: graceful
+

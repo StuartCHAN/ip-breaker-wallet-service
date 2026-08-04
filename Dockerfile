@@ -6,7 +6,7 @@ RUN mvn -B -ntp -DskipTests package
 FROM eclipse-temurin:21-jre
 RUN useradd --system --uid 10001 wallet
 WORKDIR /app
-COPY --from=build /workspace/patex-wallet-bootstrap/target/patex-wallet-bootstrap-*.jar app.jar
+COPY --from=build /workspace/ip-breaker-wallet-bootstrap/target/ip-breaker-wallet-bootstrap-*.jar app.jar
 USER wallet
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

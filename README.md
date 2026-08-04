@@ -1,4 +1,4 @@
-# Patex Wallet Service
+# IP Breaker Wallet Service
 
 A modular Java wallet backend that will implement an auditable Sepolia ETH/ERC-20 deposit pipeline: address allocation, recoverable block scanning, confirmation, idempotent double-entry crediting, reorg reversal, and reconciliation.
 
@@ -19,14 +19,14 @@ This repository currently contains the engineering foundation only. Wallet busin
 
 | Module | Responsibility |
 | --- | --- |
-| `patex-wallet-bootstrap` | executable application and configuration |
-| `patex-wallet-api` | REST controllers, validation, and error mapping |
-| `patex-wallet-application` | use-case orchestration and transaction boundaries |
-| `patex-wallet-domain` | business models, state transitions, and invariants |
-| `patex-wallet-chain` | Ethereum RPC adapters, block and log parsing |
-| `patex-wallet-infrastructure` | MySQL, Redis, repository, and outbox adapters |
-| `patex-wallet-job` | scanning, confirmation, and reconciliation jobs |
-| `patex-wallet-common` | shared value types, responses, and error codes |
+| `ip-breaker-wallet-bootstrap` | executable application and configuration |
+| `ip-breaker-wallet-api` | REST controllers, validation, and error mapping |
+| `ip-breaker-wallet-application` | use-case orchestration and transaction boundaries |
+| `ip-breaker-wallet-domain` | business models, state transitions, and invariants |
+| `ip-breaker-wallet-chain` | Ethereum RPC adapters, block and log parsing |
+| `ip-breaker-wallet-infrastructure` | MySQL, Redis, repository, and outbox adapters |
+| `ip-breaker-wallet-job` | scanning, confirmation, and reconciliation jobs |
+| `ip-breaker-wallet-common` | shared value types, responses, and error codes |
 
 Dependencies point inward: infrastructure and API depend on application/domain contracts; domain does not depend on Spring or persistence.
 
@@ -62,14 +62,14 @@ Run verification and the application:
 
 ```bash
 ./mvnw verify
-./mvnw -pl patex-wallet-bootstrap -am spring-boot:run
+./mvnw -pl ip-breaker-wallet-bootstrap -am spring-boot:run
 ```
 
 Default local credentials are development-only and may be overridden with `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `REDIS_HOST`, and `REDIS_PORT`. Secrets and RPC keys must never be committed.
 
 ## Database design
 
-Flyway owns the schema under `patex-wallet-infrastructure/src/main/resources/db/migration`. Amounts use `DECIMAL(78,0)` in the database and will use `BigInteger` in Java. Chain addresses are normalized to lowercase. Reorged data will be retained and reversed, never physically deleted.
+Flyway owns the schema under `ip-breaker-wallet-infrastructure/src/main/resources/db/migration`. Amounts use `DECIMAL(78,0)` in the database and will use `BigInteger` in Java. Chain addresses are normalized to lowercase. Reorged data will be retained and reversed, never physically deleted.
 
 The initial schema includes networks, assets, addresses, blocks, transactions, deposits, double-entry ledger records, balance snapshots, scan cursors, and transactional outbox events.
 
