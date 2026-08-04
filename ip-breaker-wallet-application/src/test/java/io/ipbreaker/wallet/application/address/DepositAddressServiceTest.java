@@ -35,6 +35,7 @@ class DepositAddressServiceTest {
 
     private static final class InMemoryRepository implements DepositAddressRepository {
         private DepositAddress assigned;
+
         private int assignmentCount;
 
         @Override
