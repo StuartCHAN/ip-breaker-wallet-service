@@ -22,6 +22,7 @@ public class JdbcDepositAddressRepository implements DepositAddressRepository {
             JOIN chain_network cn ON cn.id = wa.network_id
             WHERE cn.network_code = ? AND wa.user_id = ? AND wa.address_type = ?
             """;
+
     private static final String SELECT_AVAILABLE_FOR_UPDATE = """
             SELECT wa.id
             FROM wallet_address wa
@@ -32,6 +33,7 @@ public class JdbcDepositAddressRepository implements DepositAddressRepository {
             LIMIT 1
             FOR UPDATE SKIP LOCKED
             """;
+
     private static final String ASSIGN = """
             UPDATE wallet_address
             SET user_id = ?, status = 'ASSIGNED', assigned_at = CURRENT_TIMESTAMP(6)
