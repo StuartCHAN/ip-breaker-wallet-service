@@ -12,7 +12,13 @@ public enum ErrorCode {
         this.defaultMessage = defaultMessage;
     }
 
-    public String code() { return code; }
-    public String defaultMessage() { return defaultMessage; }
+    public String code() {
+        return code;
+    }
+
+    public String defaultMessage() {
+        return defaultMessage;
+    }
+    
 }
 
