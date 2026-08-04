@@ -8,5 +8,5 @@ logs:
 verify:
 	./mvnw -B -ntp verify
 run:
-	./mvnw -pl patex-wallet-bootstrap -am spring-boot:run
+	./mvnw -pl ip-breaker-wallet-bootstrap -am spring-boot:run
 

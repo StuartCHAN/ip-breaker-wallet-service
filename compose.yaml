@@ -2,9 +2,9 @@ services:
   mysql:
     image: mysql:8.4
     environment:
-      MYSQL_DATABASE: patex_wallet
-      MYSQL_USER: patex
-      MYSQL_PASSWORD: patex_dev_password
+      MYSQL_DATABASE: ip_breaker_wallet
+      MYSQL_USER: ipbreaker
+      MYSQL_PASSWORD: ip_breaker_dev_password
       MYSQL_ROOT_PASSWORD: root_dev_password
     ports: ["3306:3306"]
     volumes: ["mysql-data:/var/lib/mysql"]
@@ -24,9 +24,9 @@ services:
   app:
     build: .
     environment:
-      DB_URL: jdbc:mysql://mysql:3306/patex_wallet?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      DB_USERNAME: patex
-      DB_PASSWORD: patex_dev_password
+      DB_URL: jdbc:mysql://mysql:3306/ip_breaker_wallet?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: ipbreaker
+      DB_PASSWORD: ip_breaker_dev_password
       REDIS_HOST: redis
     ports: ["8080:8080"]
     depends_on:
