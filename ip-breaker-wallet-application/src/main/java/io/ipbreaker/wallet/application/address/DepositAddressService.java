@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class DepositAddressService {
     private final DepositAddressRepository repository;
+
     private final DepositAddressAllocator allocator;
 
     public DepositAddressService(DepositAddressRepository repository, DepositAddressAllocator allocator) {
