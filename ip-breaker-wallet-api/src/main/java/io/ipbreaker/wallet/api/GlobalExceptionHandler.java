@@ -1,5 +1,7 @@
 package io.ipbreaker.wallet.api;
 
+import io.ipbreaker.wallet.application.address.AddressPoolExhaustedException;
+import io.ipbreaker.wallet.application.address.DepositAddressNotFoundException;
 import io.ipbreaker.wallet.common.api.ApiResponse;
 import io.ipbreaker.wallet.common.error.ErrorCode;
 import jakarta.validation.ConstraintViolationException;
@@ -17,6 +19,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(ApiResponse.failure(error.code(), error.defaultMessage()));
     }
 
+    @ExceptionHandler(DepositAddressNotFoundException.class)
+    ResponseEntity<ApiResponse<Void>> handleAddressNotFound(DepositAddressNotFoundException exception) {
+        ErrorCode error = ErrorCode.DEPOSIT_ADDRESS_NOT_FOUND;
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.failure(error.code(), error.defaultMessage()));
+    }
+
+    @ExceptionHandler(AddressPoolExhaustedException.class)
+    ResponseEntity<ApiResponse<Void>> handlePoolExhausted(AddressPoolExhaustedException exception) {
+        ErrorCode error = ErrorCode.ADDRESS_POOL_EXHAUSTED;
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiResponse.failure(error.code(), error.defaultMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception exception) {
         ErrorCode error = ErrorCode.INTERNAL_ERROR;
@@ -24,4 +40,3 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.failure(error.code(), error.defaultMessage()));
     }
 }
-
