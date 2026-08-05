@@ -88,6 +88,49 @@ public class JdbcBlockScanRepository implements BlockScanRepository {
     }
 
     @Override
+    public Optional<String> findCanonicalBlockHash(long networkId, long blockNumber) {
+        return jdbcTemplate.query(
+                "SELECT block_hash FROM chain_block WHERE network_id = ? "
+                        + "AND block_number = ? AND status <> 'ORPHANED'",
+                (resultSet, rowNumber) -> resultSet.getString("block_hash"),
+                networkId,
+                blockNumber).stream().findFirst();
+    }
+
+    @Override
+    @Transactional
+    public void rollbackToAncestor(
+            long networkId, String owner, long blockNumber, String blockHash) {
+        readCursor(networkId, true);
+        verifyLease(networkId, owner);
+        reverseCreditedDeposits(networkId, blockNumber);
+        jdbcTemplate.update(
+                "UPDATE deposit d JOIN chain_block b ON b.id = d.block_id "
+                        + "SET d.status = 'REORGED', d.confirmations = 0, "
+                        + "d.confirmed_at = NULL WHERE b.network_id = ? "
+                        + "AND b.block_number > ? AND b.status <> 'ORPHANED' "
+                        + "AND d.status <> 'REORGED'",
+                networkId,
+                blockNumber);
+        jdbcTemplate.update(
+                "UPDATE chain_block SET status = 'ORPHANED' WHERE network_id = ? "
+                        + "AND block_number > ? AND status <> 'ORPHANED'",
+                networkId,
+                blockNumber);
+        int updated = jdbcTemplate.update(
+                "UPDATE scan_cursor SET last_scanned_block = ?, last_scanned_hash = ?, "
+                        + "version = version + 1 WHERE network_id = ? AND lease_owner = ? "
+                        + "AND lease_until >= CURRENT_TIMESTAMP(6)",
+                blockNumber,
+                blockHash,
+                networkId,
+                owner);
+        if (updated != 1) {
+            throw new IllegalStateException("Scanner lease expired before reorganization rollback");
+        }
+    }
+
+    @Override
     public void releaseLease(long networkId, String owner) {
         jdbcTemplate.update(
                 "UPDATE scan_cursor SET lease_owner = NULL, lease_until = NULL "
@@ -132,6 +175,77 @@ public class JdbcBlockScanRepository implements BlockScanRepository {
             return statement;
         }, keyHolder);
         return generatedId(keyHolder, "block");
+    }
+
+    private void reverseCreditedDeposits(long networkId, long ancestorHeight) {
+        java.util.List<Long> depositIds = jdbcTemplate.queryForList(
+                "SELECT d.id FROM deposit d JOIN chain_block b ON b.id = d.block_id "
+                        + "WHERE b.network_id = ? AND b.block_number > ? "
+                        + "AND b.status <> 'ORPHANED' AND d.status = 'CREDITED' FOR UPDATE",
+                Long.class,
+                networkId,
+                ancestorHeight);
+        for (Long depositId : depositIds) {
+            reverseCreditedDeposit(depositId);
+        }
+    }
+
+    private void reverseCreditedDeposit(long depositId) {
+        jdbcTemplate.update(
+                "INSERT INTO ledger_transaction "
+                        + "(business_type, business_id, reference_no, status, description) "
+                        + "VALUES ('DEPOSIT_REVERSAL', ?, ?, 'POSTED', 'Chain reorganization reversal')",
+                depositId,
+                "DEPOSIT_REVERSAL:" + depositId);
+        Long reversalId = jdbcTemplate.queryForObject(
+                "SELECT id FROM ledger_transaction WHERE business_type = 'DEPOSIT_REVERSAL' "
+                        + "AND business_id = ?",
+                Long.class,
+                depositId);
+        java.util.List<ReversalEntry> entries = jdbcTemplate.query(
+                "SELECT le.ledger_account_id, le.direction, le.amount_raw "
+                        + "FROM deposit d JOIN ledger_entry le "
+                        + "ON le.ledger_transaction_id = d.credited_ledger_tx_id WHERE d.id = ?",
+                (resultSet, rowNumber) -> new ReversalEntry(
+                        resultSet.getLong("ledger_account_id"),
+                        resultSet.getString("direction"),
+                        resultSet.getString("amount_raw")),
+                depositId);
+        if (entries.size() != 2) {
+            throw new IllegalStateException("Credited deposit does not have two ledger entries");
+        }
+        java.math.BigInteger debits = java.math.BigInteger.ZERO;
+        java.math.BigInteger credits = java.math.BigInteger.ZERO;
+        for (ReversalEntry entry : entries) {
+            String reversedDirection = "DEBIT".equals(entry.direction()) ? "CREDIT" : "DEBIT";
+            jdbcTemplate.update(
+                    "INSERT INTO ledger_entry (ledger_transaction_id, ledger_account_id, "
+                            + "direction, amount_raw) VALUES (?, ?, ?, ?)",
+                    reversalId,
+                    entry.accountId(),
+                    reversedDirection,
+                    entry.amountRaw());
+            int changed = jdbcTemplate.update(
+                    "UPDATE account_balance SET available_amount_raw = available_amount_raw - ?, "
+                            + "version = version + 1 WHERE ledger_account_id = ?",
+                    entry.amountRaw(),
+                    entry.accountId());
+            if (changed != 1) {
+                throw new IllegalStateException("Missing balance snapshot for deposit reversal");
+            }
+            java.math.BigInteger amount = new java.math.BigInteger(entry.amountRaw());
+            if ("DEBIT".equals(reversedDirection)) {
+                debits = debits.add(amount);
+            } else {
+                credits = credits.add(amount);
+            }
+        }
+        if (!debits.equals(credits)) {
+            throw new IllegalStateException("Deposit reversal is not balanced");
+        }
+    }
+
+    private record ReversalEntry(long accountId, String direction, String amountRaw) {
     }
 
     private long insertTransaction(
