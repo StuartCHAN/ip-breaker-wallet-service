@@ -139,7 +139,7 @@ public class JdbcReconciliationRepository implements ReconciliationRepository {
                         details = VALUES(details), status = 'OPEN',
                         occurrence_count = occurrence_count + 1,
                         last_detected_at = CURRENT_TIMESTAMP(6), resolved_at = NULL
-                    "", difference.type(), difference.networkCode(), difference.assetCode(),
+                    """, difference.type(), difference.networkCode(), difference.assetCode(),
                     difference.subjectType(), difference.subjectKey(), difference.expectedAmount(),
                     difference.actualAmount(), difference.details());
         }
