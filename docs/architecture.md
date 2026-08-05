@@ -53,7 +53,7 @@ sequenceDiagram
     I->>S: Canonical projections + source versions
     S->>L: SETTLED journal
     C-->>I: Parent hash mismatch
-    I->>I: Find common ancestor; mark orphaned
+    I->>I: Find common ancestor and mark orphaned
     I->>S: Relied-on snapshot is no longer canonical
     S->>L: REVERSED journal
     C->>I: Replay on new canonical branch
