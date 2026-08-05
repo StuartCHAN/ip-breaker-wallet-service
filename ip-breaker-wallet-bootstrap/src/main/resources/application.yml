@@ -34,3 +34,6 @@ wallet:
     batch-size: ${SCANNER_BATCH_SIZE:25}
     lease-duration: ${SCANNER_LEASE_DURATION:45s}
     fixed-delay: ${SCANNER_FIXED_DELAY:5s}
+  confirmation:
+    batch-size: ${CONFIRMATION_BATCH_SIZE:100}
+    fixed-delay: ${CONFIRMATION_FIXED_DELAY:7s}
