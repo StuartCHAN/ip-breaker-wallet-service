@@ -1,0 +1,110 @@
+CREATE TABLE license_terms_manifest (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    network_id BIGINT UNSIGNED NOT NULL,
+    escrow_address CHAR(42) NOT NULL,
+    agreement_id DECIMAL(78,0) NOT NULL,
+    terms_version BIGINT UNSIGNED NOT NULL,
+    schema_version INT UNSIGNED NOT NULL,
+    manifest_hash CHAR(66) NOT NULL,
+    canonical_json JSON NOT NULL,
+    asset_id DECIMAL(78,0) NOT NULL,
+    licensor CHAR(42) NOT NULL,
+    licensee CHAR(42) NOT NULL,
+    payer CHAR(42) NOT NULL,
+    payee CHAR(42) NOT NULL,
+    currency_kind VARCHAR(16) NOT NULL,
+    amount_raw DECIMAL(78,0) NOT NULL,
+    status VARCHAR(16) NOT NULL,
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    superseded_at TIMESTAMP(6) NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_terms_version (network_id, escrow_address, agreement_id, terms_version),
+    UNIQUE KEY uk_terms_hash (network_id, escrow_address, agreement_id, manifest_hash),
+    CONSTRAINT fk_terms_network FOREIGN KEY (network_id) REFERENCES chain_network (id),
+    CONSTRAINT chk_terms_status CHECK (status IN ('ACTIVE', 'SUPERSEDED')),
+    CONSTRAINT chk_terms_currency CHECK (currency_kind = 'NATIVE'),
+    CONSTRAINT chk_terms_addresses_lower CHECK (
+        escrow_address = LOWER(escrow_address) AND licensor = LOWER(licensor)
+        AND licensee = LOWER(licensee) AND payer = LOWER(payer) AND payee = LOWER(payee))
+);
+
+CREATE TABLE payment_obligation (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    network_id BIGINT UNSIGNED NOT NULL,
+    escrow_address CHAR(42) NOT NULL,
+    agreement_id DECIMAL(78,0) NOT NULL,
+    terms_manifest_id BIGINT UNSIGNED NOT NULL,
+    asset_id DECIMAL(78,0) NOT NULL,
+    payer CHAR(42) NOT NULL,
+    payee CHAR(42) NOT NULL,
+    currency_kind VARCHAR(16) NOT NULL,
+    amount_raw DECIMAL(78,0) NOT NULL,
+    settlement_status VARCHAR(16) NOT NULL,
+    control_status VARCHAR(16) NOT NULL,
+    matched_payment_event_id BIGINT UNSIGNED NULL,
+    current_snapshot_id BIGINT UNSIGNED NULL,
+    version BIGINT UNSIGNED NOT NULL DEFAULT 1,
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_obligation_terms (terms_manifest_id),
+    KEY idx_obligation_agreement (network_id, escrow_address, agreement_id, settlement_status),
+    CONSTRAINT fk_obligation_network FOREIGN KEY (network_id) REFERENCES chain_network (id),
+    CONSTRAINT fk_obligation_terms FOREIGN KEY (terms_manifest_id) REFERENCES license_terms_manifest (id),
+    CONSTRAINT fk_obligation_payment FOREIGN KEY (matched_payment_event_id) REFERENCES chain_domain_event (id),
+    CONSTRAINT chk_obligation_settlement CHECK (settlement_status IN ('PENDING', 'ELIGIBLE')),
+    CONSTRAINT chk_obligation_control CHECK (control_status IN ('CLEAR', 'HELD', 'DISPUTED')),
+    CONSTRAINT chk_obligation_currency CHECK (currency_kind = 'NATIVE')
+);
+
+CREATE TABLE payment_obligation_match (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    obligation_id BIGINT UNSIGNED NOT NULL,
+    payment_event_id BIGINT UNSIGNED NOT NULL,
+    match_status VARCHAR(16) NOT NULL,
+    reason_codes_json JSON NOT NULL,
+    canonical_status VARCHAR(16) NOT NULL,
+    evaluated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    orphaned_at TIMESTAMP(6) NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_obligation_payment_match (obligation_id, payment_event_id),
+    CONSTRAINT fk_match_obligation FOREIGN KEY (obligation_id) REFERENCES payment_obligation (id),
+    CONSTRAINT fk_match_event FOREIGN KEY (payment_event_id) REFERENCES chain_domain_event (id),
+    CONSTRAINT chk_match_status CHECK (match_status IN ('MATCHED', 'REJECTED')),
+    CONSTRAINT chk_match_canonical CHECK (canonical_status IN ('CANONICAL', 'ORPHANED'))
+);
+
+CREATE TABLE settlement_eligibility_snapshot (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    obligation_id BIGINT UNSIGNED NOT NULL,
+    safe_block_number BIGINT UNSIGNED NOT NULL,
+    safe_block_hash CHAR(66) NOT NULL,
+    asset_state_version BIGINT UNSIGNED NULL,
+    asset_source_event_id BIGINT UNSIGNED NULL,
+    evidence_set_hash CHAR(66) NOT NULL,
+    license_state_version BIGINT UNSIGNED NULL,
+    license_source_event_id BIGINT UNSIGNED NULL,
+    license_terms_version BIGINT UNSIGNED NOT NULL,
+    license_terms_manifest_hash CHAR(66) NOT NULL,
+    licensor CHAR(42) NOT NULL,
+    licensee CHAR(42) NOT NULL,
+    payment_event_id BIGINT UNSIGNED NULL,
+    eligibility_decision VARCHAR(16) NOT NULL,
+    decision_reason_codes_json JSON NOT NULL,
+    canonical_status VARCHAR(16) NOT NULL,
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    orphaned_at TIMESTAMP(6) NULL,
+    PRIMARY KEY (id),
+    KEY idx_snapshot_obligation (obligation_id, id),
+    KEY idx_snapshot_block (safe_block_number, canonical_status),
+    CONSTRAINT fk_snapshot_obligation FOREIGN KEY (obligation_id) REFERENCES payment_obligation (id),
+    CONSTRAINT fk_snapshot_asset_event FOREIGN KEY (asset_source_event_id) REFERENCES chain_domain_event (id),
+    CONSTRAINT fk_snapshot_license_event FOREIGN KEY (license_source_event_id) REFERENCES chain_domain_event (id),
+    CONSTRAINT fk_snapshot_payment_event FOREIGN KEY (payment_event_id) REFERENCES chain_domain_event (id),
+    CONSTRAINT chk_snapshot_decision CHECK (eligibility_decision IN ('ELIGIBLE', 'INELIGIBLE')),
+    CONSTRAINT chk_snapshot_canonical CHECK (canonical_status IN ('CANONICAL', 'ORPHANED'))
+);
+
+ALTER TABLE payment_obligation
+    ADD CONSTRAINT fk_obligation_snapshot FOREIGN KEY (current_snapshot_id)
+    REFERENCES settlement_eligibility_snapshot (id);

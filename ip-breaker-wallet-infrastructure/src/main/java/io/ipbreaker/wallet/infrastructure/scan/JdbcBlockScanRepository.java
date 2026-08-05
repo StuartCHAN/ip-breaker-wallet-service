@@ -6,6 +6,8 @@ import io.ipbreaker.wallet.application.scan.ScanNetwork;
 import io.ipbreaker.wallet.application.scan.ScannedBlock;
 import io.ipbreaker.wallet.application.scan.ScannedReceipt;
 import io.ipbreaker.wallet.application.scan.ScannedTransaction;
+import io.ipbreaker.wallet.application.settlement.SettlementEligibilityRepository;
+import io.ipbreaker.wallet.rights.projection.RightsProjectionRepository;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.Timestamp;
@@ -16,7 +18,6 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import io.ipbreaker.wallet.rights.projection.RightsProjectionRepository;
 
 @Repository
 public class JdbcBlockScanRepository implements BlockScanRepository {
@@ -24,11 +25,15 @@ public class JdbcBlockScanRepository implements BlockScanRepository {
 
     private final RightsProjectionRepository rightsProjectionRepository;
 
+    private final SettlementEligibilityRepository eligibilityRepository;
+
     public JdbcBlockScanRepository(
             JdbcTemplate jdbcTemplate,
-            RightsProjectionRepository rightsProjectionRepository) {
+            RightsProjectionRepository rightsProjectionRepository,
+            SettlementEligibilityRepository eligibilityRepository) {
         this.jdbcTemplate = jdbcTemplate;
         this.rightsProjectionRepository = rightsProjectionRepository;
+        this.eligibilityRepository = eligibilityRepository;
     }
 
     @Override
@@ -111,6 +116,7 @@ public class JdbcBlockScanRepository implements BlockScanRepository {
         verifyLease(networkId, owner);
         reverseCreditedDeposits(networkId, blockNumber);
         rightsProjectionRepository.rollbackAndRebuild(networkId, blockNumber);
+        eligibilityRepository.rollbackAfter(networkId, blockNumber, blockHash);
         jdbcTemplate.update(
                 "UPDATE deposit d JOIN chain_block b ON b.id = d.block_id "
                         + "SET d.status = 'REORGED', d.confirmations = 0, "

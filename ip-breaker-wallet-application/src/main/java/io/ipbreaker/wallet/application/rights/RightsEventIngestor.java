@@ -1,6 +1,7 @@
 package io.ipbreaker.wallet.application.rights;
 
 import io.ipbreaker.wallet.application.scan.ScannedBlock;
+import io.ipbreaker.wallet.application.settlement.SettlementEligibilityService;
 import io.ipbreaker.wallet.rights.contract.ManagedContract;
 import io.ipbreaker.wallet.rights.contract.ManagedContractRepository;
 import io.ipbreaker.wallet.rights.event.AssetJurisdictionResolver;
@@ -29,6 +30,8 @@ public class RightsEventIngestor {
     private final ChainDomainEventRepository eventRepository;
     private final RightsProjectionRepository projectionRepository;
 
+    private final SettlementEligibilityService eligibilityService;
+
     private final MeterRegistry meterRegistry;
     private final ContractEventDecoder decoder;
 
@@ -36,11 +39,13 @@ public class RightsEventIngestor {
             ManagedContractRepository contractRepository,
             ChainDomainEventRepository eventRepository,
             RightsProjectionRepository projectionRepository,
+            SettlementEligibilityService eligibilityService,
             MeterRegistry meterRegistry,
             AssetJurisdictionResolver jurisdictionResolver) {
         this.contractRepository = contractRepository;
         this.eventRepository = eventRepository;
         this.projectionRepository = projectionRepository;
+        this.eligibilityService = eligibilityService;
         this.meterRegistry = meterRegistry;
         this.decoder = new ContractEventDecoder(jurisdictionResolver);
     }
@@ -75,6 +80,7 @@ public class RightsEventIngestor {
             if (!saved.unknown() && saved.newlyCanonicalized()) {
                 try {
                     projectionRepository.apply(saved.event());
+                    eligibilityService.onCanonicalEvent(saved.event());
                 } catch (RuntimeException exception) {
                     meterRegistry.counter("wallet.rights.projection.failures", "projection_type",
                             saved.event().aggregateType() == null ? "NONE"
