@@ -5,6 +5,14 @@ decides whether a canonical escrow funding event is eligible for settlement. It 
 before ledger posting, revenue distribution, reversal postings, refunds, or legal adjudication; those
 belong to Sprint 9 or an authorized control workflow.
 
+```mermaid
+flowchart TB
+    T["Hash-bound terms"] --> O["Deterministic obligation"]
+    O --> M["Canonical payment match"]
+    M --> E["Immutable eligibility snapshot"]
+    E --> G["Gate for Sprint 9 posting"]
+```
+
 ## Structured terms workflow
 
 The client first prepares a versioned manifest and obtains its canonical JSON and `keccak256` hash:
@@ -48,6 +56,16 @@ change. A later asset transfer does not retroactively invalidate an earlier elig
 affects later obligations. Legal invalidity, disputes, and court orders enter the separate control
 workflow instead of silently rewriting this technical decision.
 
+```mermaid
+flowchart TB
+    A["Asset active + licensor aligned"] --> T["Terms hash + fields match"]
+    T --> P["Payer + currency + amount match"]
+    P --> E["ELIGIBLE snapshot"]
+    A -. "mismatch" .-> N["PENDING + stable reason codes"]
+    T -. "mismatch" .-> N
+    P -. "mismatch" .-> N
+```
+
 ## Orthogonal state
 
 Sprint 8 keeps settlement progress and control state separate:
@@ -61,6 +79,13 @@ Legal disputes and manual controls must not rewrite historical eligibility decis
 canonical on-chain dispute raise/resolve events to `DISPUTED`/`CLEAR`; it does not expose manual
 control mutations because the authorization and legal disposition workflow has not yet been
 implemented.
+
+| Settlement state | Control state | Operational meaning |
+| --- | --- | --- |
+| `PENDING` | `CLEAR` | Evidence does not yet authorize posting |
+| `ELIGIBLE` | `CLEAR` | Sprint 9 may consider posting |
+| `ELIGIBLE` | `HELD` | Evidence matched, but policy blocks new posting |
+| `ELIGIBLE` | `DISPUTED` | Historical decision remains visible; dispute workflow governs new action |
 
 ## Reorganization behavior
 

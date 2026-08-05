@@ -1,112 +1,191 @@
 # IP Breaker Rights-Aware Settlement Backend
 
-A modular Java backend implementing auditable Sepolia deposits and rights-aware IP revenue settlement: address allocation, recoverable block scanning, eligibility snapshots, idempotent double-entry posting, reorg reversal and restoration, reconciliation, and proof packaging.
+> **A rights-aware, reorg-safe settlement and assurance engine for IP-backed real-world assets.**
 
-## Sprint 10 status
+IP Breaker answers a question that a transfer event alone cannot:
 
-Sprint 10 exposes the complete rights-to-ledger audit chain, risk and reconciliation status,
-reproducible Settlement Proof Packages, and a financing demonstration dashboard while preserving
-the immutable posting, technical reversal, and canonical restoration semantics from Sprints 7–9.
+> **Why is this IP licensing payment eligible to become auditable revenue?**
 
-- Java 21 and Spring Boot 3.5
-- Maven multi-module architecture
-- MySQL 8.4, Redis 7.4, and Flyway
-- Initial 12-table wallet schema and Sepolia seed data
-- Standard API envelopes and exception handling
-- Actuator health endpoints
-- Checkstyle, SpotBugs, JaCoCo, and GitHub Actions
-- Docker Compose one-command environment
-- Concurrent address-pool allocation with row locking and unique constraints
-- Idempotent deposit-address allocation and lookup APIs
-- Lowercase Ethereum storage with EIP-55 API display
-- `AddressProvider` and `Signer` security-boundary interfaces
-- Restart-safe Sepolia block scanning with database leases and bounded RPC retries
-- Native ETH and standard ERC-20 deposit recognition
-- Idempotency for multiple transfer logs in the same transaction
-- User deposit-list and deposit-detail APIs
-- Confirmation state transitions and idempotent double-entry deposit crediting
-- Ledger-backed user balance snapshots and transaction query APIs
-- Reorg recovery with orphan retention and idempotent double-entry reversals
-- Ledger snapshot, deposit-ledger, and on-chain custody reconciliation
-- Scanner height/lag, RPC latency/failure, and reconciliation metrics
-- Hash-bound license obligations and immutable settlement eligibility snapshots
-- Deterministic allocation, double-entry settlement, technical reversal, and restoration journals
-- Rights–license–payment–journal audit queries and assurance risk codes
-- SHA-256 Settlement Proof Packages and the `/sprint10-dashboard.html` demonstration surface
+It connects canonical IP-rights facts, hash-bound license terms, escrow payment, immutable eligibility evidence, deterministic allocation, double-entry accounting, reorganization recovery, reconciliation, and reproducible proof packaging in one Java backend.
 
-## Modules
+[See the architecture](docs/architecture.md) · [Run the demo](docs/demo-guide.md) · [Choose a talk track](docs/sprint-10-demo-talk-tracks.md) · [Inspect Sprint 10](docs/sprint-10.md)
+
+## The 30-second view
+
+```mermaid
+flowchart TB
+    A["Canonical IP rights"] --> B["Hash-bound license terms"]
+    B --> C["Escrow payment match"]
+    C --> D["Immutable eligibility snapshot"]
+    D --> E["Allocation + double-entry journal"]
+    E --> F["Reconciliation + Proof Package"]
+```
+
+The system does not treat an IP NFT as legal ownership, and it does not treat `LicenseFunded` as sufficient settlement authority. It records the exact rights, terms, payment, safe block, and projection versions used for each decision—then preserves the accounting consequences without rewriting history.
+
+## Why this is different
+
+| Question | Typical wallet / NFT demo | IP Breaker |
+| --- | --- | --- |
+| What does a payment prove? | A transfer happened | A transfer happened **and** is separately tested against rights, terms, payer, asset, and amount |
+| What survives an audit? | Current database state | Immutable decision snapshots, source chain data, allocation plans, and linked journals |
+| What happens on reorg? | Rescan or overwrite | Retain orphaned facts, reverse with a new journal, then restore idempotently from the new canonical chain |
+| What happens on dispute? | Often conflated with rollback | `HELD / DISPUTED` blocks new action without pretending a legal change erased historical chain facts |
+| How is “all clear” shown? | No error row found | `MATCHED` only after all reconciliation checks actually ran; otherwise `UNKNOWN` |
+| What can be exported? | Transaction JSON | Reproducible normalized-JSON Settlement Proof Package with SHA-256 content digest |
+
+## The core engineering distinction
+
+```mermaid
+flowchart TB
+    S{"What changed?"}
+    S -->|"Canonical chain fact became orphaned"| T["Technical fact failure"]
+    T --> R["Reverse with a new balanced journal"]
+    R --> P["Restore from new canonical fact"]
+    S -->|"Transfer, expiry, dispute, invalidity"| L["Legal / business change"]
+    L --> H["Hold, dispute, or policy review"]
+    H --> K["Preserve historical accounting"]
+```
+
+Only the technical-fact path is an automatic reversal. A later transfer, expiry, or dispute must not silently rewrite a settlement that was valid under the facts used at the time.
+
+## Settlement lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: obligation created
+    PENDING --> ELIGIBLE: rights + terms + payment match
+    ELIGIBLE --> SETTLED: allocation posted
+    SETTLED --> REVERSED: relied-on chain fact orphaned
+    REVERSED --> RESTORED: canonical fact replayed
+    PENDING --> PENDING: mismatch reason retained
+```
+
+Business control is deliberately orthogonal to this lifecycle: `CLEAR`, `HELD`, and `DISPUTED` decide whether new action is permitted; they do not overwrite the historical settlement state.
+
+## System map
+
+```mermaid
+flowchart TB
+    CHAIN["Sepolia + managed IP contracts"] --> INDEX["Safe-height scanner + rights index"]
+    INDEX --> DECIDE["Obligation + eligibility engine"]
+    DECIDE --> BOOK["Allocation + immutable double-entry ledger"]
+    BOOK --> ASSURE["Reconciliation + audit trail + Proof Package"]
+    ASSURE --> UI["Read-only assurance dashboard"]
+```
+
+| Layer | Notable safeguards |
+| --- | --- |
+| Chain ingestion | Safe-height scanning, database lease, bounded RPC retries, parent-hash checks, common-ancestor recovery |
+| Rights projection | Runtime code-hash gate, deployment metadata, ordered events, unknown-event retention, deterministic rebuilds |
+| Eligibility | Canonical terms hash, payer/currency/amount checks, rights-owner alignment, immutable decision snapshots |
+| Accounting | Deterministic allocation, business-key idempotency, balanced original/reversal/restoration journals |
+| Assurance | Index readiness, technical risks, business controls, reconciliation checkpoints, reproducible content digest |
+
+For the detailed component and failure model, see [Architecture and trust boundaries](docs/architecture.md).
+
+## What to show in a live explanation
+
+1. **Settle** — create hash-bound terms, observe an escrow payment, and show the eligibility snapshot plus balanced journal.
+2. **Break the chain fact** — simulate a development-chain reorganization; show the original evidence retained and a separate reversal journal.
+3. **Restore and prove** — replay the canonical payment, show the restoration journal, inspect risk/reconciliation state, and export the Proof Package.
+
+The dashboard reads the same application APIs as other clients; it does not maintain a second demo-only truth source.
+
+```text
+http://localhost:8080/sprint10-dashboard.html
+```
+
+Use the [step-by-step demo guide](docs/demo-guide.md) for a 3-, 7-, or 12-minute presentation.
+
+## Choose your audience
+
+| Audience | Lead with | Then prove | Suggested route |
+| --- | --- | --- | --- |
+| Interviewer | Reorg-safe state and immutable accounting | Idempotency, transaction boundaries, projections, reconciliation | [3–5 minute technical narrative](docs/sprint-10-demo-talk-tracks.md#一面试版约-35-分钟) |
+| Hackathon judge | “Payment” versus “eligible revenue” | Live `SETTLED → REVERSED → RESTORED` lifecycle | [2 minute product demo](docs/sprint-10-demo-talk-tracks.md#二hackathon-版约-2-分钟) |
+| Investor | Continuous evidence for IP licensing cash flow | Rights-to-ledger trace, risk state, reconciliation, proof package | [90 second business narrative](docs/sprint-10-demo-talk-tracks.md#三投资者版约-90-秒) |
+
+## Technology and modules
+
+Java 21 · Spring Boot 3.5 · Maven · MySQL 8.4 · Redis 7.4 · Flyway · Web3j · Docker Compose
 
 | Module | Responsibility |
 | --- | --- |
-| `ip-breaker-wallet-bootstrap` | executable application and configuration |
+| `ip-breaker-wallet-bootstrap` | Executable application and runtime configuration |
 | `ip-breaker-wallet-api` | REST controllers, validation, and error mapping |
-| `ip-breaker-wallet-application` | use-case orchestration and transaction boundaries |
-| `ip-breaker-wallet-domain` | business models, state transitions, and invariants |
-| `ip-breaker-wallet-rights` | IP contract events, deterministic decoders, projection and query ports |
-| `ip-breaker-wallet-chain` | Ethereum RPC adapters, block and log parsing |
-| `ip-breaker-wallet-infrastructure` | MySQL, Redis, repository, and outbox adapters |
-| `ip-breaker-wallet-job` | scanning, confirmation, and reconciliation jobs |
-| `ip-breaker-wallet-common` | shared value types, responses, and error codes |
+| `ip-breaker-wallet-application` | Use-case orchestration and transaction boundaries |
+| `ip-breaker-wallet-domain` | Business models, state transitions, and invariants |
+| `ip-breaker-wallet-rights` | Contract events, deterministic decoders, rights projections, and query ports |
+| `ip-breaker-wallet-chain` | Ethereum RPC adapters, block/log parsing, and chain primitives |
+| `ip-breaker-wallet-infrastructure` | MySQL, Redis, repositories, reconciliation data, and outbox adapters |
+| `ip-breaker-wallet-job` | Scanning, confirmation, projection, and reconciliation jobs |
+| `ip-breaker-wallet-common` | Shared value types, API envelopes, and error codes |
 
-Dependencies point inward: infrastructure and API depend on application/domain contracts; domain does not depend on Spring or persistence.
+Dependencies point inward: API and infrastructure depend on application/domain contracts; the domain does not depend on Spring or persistence.
 
-## Prerequisites
+## Quick start
 
-- Docker Desktop with Docker Compose, or Java 21 plus MySQL 8 and Redis 7
-- On Windows, Git should preserve the executable bit for `mvnw`; `mvnw.cmd` is also included.
-
-## Start the complete stack
+Prerequisites: Docker Desktop with Docker Compose, or Java 21 plus MySQL 8 and Redis 7.
 
 ```bash
 docker compose up --build
 ```
 
-Then check:
+Then verify the application and open the dashboard:
 
 ```bash
 curl http://localhost:8080/actuator/health
 curl http://localhost:8080/api/v1/system/status
 ```
 
-Stop it with `docker compose down`. Add `-v` only when you intentionally want to delete the local MySQL volume.
+```text
+http://localhost:8080/sprint10-dashboard.html
+```
 
-## Local development
-
-Start dependencies:
+For local development:
 
 ```bash
 docker compose up -d mysql redis
-```
-
-Run verification and the application:
-
-```bash
 ./mvnw verify
 ./mvnw -pl ip-breaker-wallet-bootstrap -am spring-boot:run
 ```
 
-Default local credentials are development-only and may be overridden with `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `REDIS_HOST`, and `REDIS_PORT`. Secrets and RPC keys must never be committed.
+Default credentials are development-only and can be overridden with `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `REDIS_HOST`, and `REDIS_PORT`. RPC keys and other secrets must never be committed. On Windows, use `mvnw.cmd` if the executable bit is not preserved.
 
-## Database design
+## Proof and claims boundary
 
-Flyway owns the schema under `ip-breaker-wallet-infrastructure/src/main/resources/db/migration`. Amounts use `DECIMAL(78,0)` in the database and will use `BigInteger` in Java. Chain addresses are normalized to lowercase. Reorged data will be retained and reversed, never physically deleted.
+The Settlement Proof Package is a reproducible audit snapshot. Its SHA-256 digest proves equality of the normalized content generated by this system.
 
-The initial schema includes networks, assets, addresses, blocks, transactions, deposits, double-entry ledger records, balance snapshots, scan cursors, and transactional outbox events.
+It is **not**:
 
-## Roadmap
+- a digital signature or zero-knowledge proof;
+- a legal opinion about ownership, validity, or enforceability;
+- an independent audit or assurance report;
+- evidence of guaranteed cash flow, investment return, regulatory approval, or secondary-market liquidity.
 
-1. Sprint 1: network, asset, and concurrent deposit-address allocation
-2. Sprint 2: recoverable Sepolia block scanner
-3. Sprint 3: native ETH and ERC-20 deposit recognition
-4. Sprint 4: confirmation state machine and double-entry ledger
-5. Sprint 5: reorg detection, rollback, and ledger reversal
-6. Sprint 6: reconciliation, observability, and demonstration scripts
-7. Sprint 7: IP contract indexing and reorg-safe rights projections
-8. Sprint 8: license obligations and settlement eligibility
-9. Sprint 9: deterministic allocation, ledger posting, technical reversal, and restoration
-10. Sprint 10: audit proof packages, end-to-end assurance queries, and financing demonstration
+Likewise, the indexed IP asset is an evidence and rights-reference container; token representation alone does not transfer off-chain legal ownership.
 
-See [Sprint 7 implementation notes](docs/sprint-7.md) for indexing activation and
-[Sprint 8 implementation notes](docs/sprint-8.md) for terms, obligations, APIs, and eligibility
-semantics. Settlement accounting is documented in [Sprint 9](docs/sprint-9.md), with proof,
-dashboard, script, and claims boundaries in [Sprint 10](docs/sprint-10.md).
+## Delivery map
+
+| Phase | Sprints | Outcome |
+| --- | --- | --- |
+| Wallet foundation | 1–3 | Address allocation, recoverable scanning, ETH/ERC-20 deposit recognition |
+| Accounting safety | 4–6 | Confirmation, double-entry crediting, reorg reversal, reconciliation, observability |
+| Rights-aware settlement | 7–9 | Contract indexing, rights projections, obligations, eligibility, allocation, reversal/restoration |
+| Assurance and demonstration | 10 | Full audit trail, risk and reconciliation status, Proof Package, dashboard, lifecycle script |
+
+Sprint notes: [0](docs/sprint-0.md) · [1](docs/sprint-1.md) · [2](docs/sprint-2.md) · [3](docs/sprint-3.md) · [4](docs/sprint-4.md) · [5](docs/sprint-5.md) · [6](docs/sprint-6.md) · [7](docs/sprint-7.md) · [8](docs/sprint-8.md) · [9](docs/sprint-9.md) · [10](docs/sprint-10.md)
+
+## Documentation map
+
+| Document | Use it for |
+| --- | --- |
+| [Architecture and trust boundaries](docs/architecture.md) | System design, invariants, reorg behavior, and module boundaries |
+| [Live demonstration guide](docs/demo-guide.md) | Setup, presentation timing, evidence to show, and recovery path |
+| [Interview / Hackathon / investor talk tracks](docs/sprint-10-demo-talk-tracks.md) | Audience-specific spoken narratives and likely questions |
+| [Sprint 10 implementation notes](docs/sprint-10.md) | API, proof integrity, assurance semantics, and definition of done |
+
+## Current scope
+
+The implemented demonstration is intentionally narrow: Sepolia, the configured managed contracts, native settlement under the current V1 terms model, and deterministic 100% allocation to the hash-bound payee. Multi-party revenue splits, stablecoin settlement, issuer/SPV structures, investor eligibility, transfer restrictions, legal-document due diligence, and regulatory classification remain future product layers—not completed capabilities.

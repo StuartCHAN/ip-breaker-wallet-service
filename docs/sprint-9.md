@@ -5,6 +5,14 @@ allocation plan, posts a balanced journal, and handles technical chain-reorganiz
 canonical restoration. It does not adjudicate legal invalidity, issue refunds, move on-chain funds,
 or create the Sprint 10 assurance package.
 
+```mermaid
+flowchart TB
+    E["Canonical ELIGIBLE snapshot"] --> A["PAYEE_100_V1 allocation"]
+    A --> S["SETTLED journal"]
+    S --> R["REVERSED journal"]
+    R --> C["RESTORED journal"]
+```
+
 ## Allocation policy
 
 Terms schema v1 binds one `payee` and no multi-party split. Policy `PAYEE_100_V1` therefore allocates
@@ -34,6 +42,20 @@ restoration: SETTLEMENT_RESTORE  debit escrow asset / credit payee liability
 
 `SETTLED`, `REVERSED`, and `RESTORED` records are immutable. Reversal links to the posting it negates;
 restoration links to the reversal that it restores. The original journal is never edited or deleted.
+
+| Lifecycle record | Debit | Credit | Linkage |
+| --- | --- | --- | --- |
+| `SETTLED` | Escrow asset | Payee liability | Eligibility snapshot |
+| `REVERSED` | Payee liability | Escrow asset | Original settlement |
+| `RESTORED` | Escrow asset | Payee liability | Reversal + new canonical snapshot |
+
+```mermaid
+stateDiagram-v2
+    [*] --> ELIGIBLE
+    ELIGIBLE --> SETTLED: balanced posting
+    SETTLED --> REVERSED: relied-on snapshot orphaned
+    REVERSED --> RESTORED: canonical replay eligible
+```
 
 ## Legal and control boundary
 
