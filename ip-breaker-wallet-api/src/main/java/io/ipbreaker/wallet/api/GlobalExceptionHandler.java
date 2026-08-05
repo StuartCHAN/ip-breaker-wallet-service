@@ -2,6 +2,7 @@ package io.ipbreaker.wallet.api;
 
 import io.ipbreaker.wallet.application.address.AddressPoolExhaustedException;
 import io.ipbreaker.wallet.application.address.DepositAddressNotFoundException;
+import io.ipbreaker.wallet.application.audit.SettlementAuditNotFoundException;
 import io.ipbreaker.wallet.application.deposit.DepositNotFoundException;
 import io.ipbreaker.wallet.application.rights.RightsNotFoundException;
 import io.ipbreaker.wallet.application.rights.RightsIndexUnavailableException;
@@ -71,6 +72,14 @@ public class GlobalExceptionHandler {
     ResponseEntity<ApiResponse<Void>> handleSettlementRecordNotFound(
             SettlementRecordNotFoundException exception) {
         ErrorCode error = ErrorCode.SETTLEMENT_RECORD_NOT_FOUND;
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.failure(error.code(), error.defaultMessage()));
+    }
+
+    @ExceptionHandler(SettlementAuditNotFoundException.class)
+    ResponseEntity<ApiResponse<Void>> handleSettlementAuditNotFound(
+            SettlementAuditNotFoundException exception) {
+        ErrorCode error = ErrorCode.SETTLEMENT_AUDIT_NOT_FOUND;
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.failure(error.code(), error.defaultMessage()));
     }

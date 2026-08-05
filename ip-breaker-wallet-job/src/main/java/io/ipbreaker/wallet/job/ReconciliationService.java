@@ -24,15 +24,15 @@ public class ReconciliationService {
         this.rpcClient = rpcClient;
     }
 
-    public int reconcileLedger() {
-        List<ReconciliationDifference> differences = repository.findLedgerBalanceDifferences();
-        repository.replaceResults("LEDGER_BALANCE", differences);
+    public int reconcileLedger(String networkCode) {
+        List<ReconciliationDifference> differences = repository.findLedgerBalanceDifferences(networkCode);
+        repository.replaceResults("LEDGER_BALANCE", networkCode, differences);
         return differences.size();
     }
 
-    public int reconcileDeposits() {
-        List<ReconciliationDifference> differences = repository.findDepositLedgerDifferences();
-        repository.replaceResults("DEPOSIT_LEDGER", differences);
+    public int reconcileDeposits(String networkCode) {
+        List<ReconciliationDifference> differences = repository.findDepositLedgerDifferences(networkCode);
+        repository.replaceResults("DEPOSIT_LEDGER", networkCode, differences);
         return differences.size();
     }
 
@@ -55,7 +55,7 @@ public class ReconciliationService {
                         "platform ledger balance differs from custody addresses"));
             }
         }
-        repository.replaceResults("ONCHAIN_PLATFORM", differences);
+        repository.replaceResults("ONCHAIN_PLATFORM", networkCode, differences);
         return differences.size();
     }
 }

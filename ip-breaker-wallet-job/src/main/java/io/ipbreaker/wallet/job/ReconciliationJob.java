@@ -29,8 +29,8 @@ public class ReconciliationJob {
     @Scheduled(fixedDelayString = "${wallet.reconciliation.fixed-delay}")
     public void reconcile() {
         try {
-            int count = service.reconcileLedger()
-                    + service.reconcileDeposits()
+            int count = service.reconcileLedger(networkCode)
+                    + service.reconcileDeposits(networkCode)
                     + service.reconcileOnChain(networkCode);
             differences.increment(count);
         } catch (RuntimeException exception) {

@@ -1,12 +1,12 @@
 # IP Breaker Rights-Aware Settlement Backend
 
-A modular Java wallet backend that will implement an auditable Sepolia ETH/ERC-20 deposit pipeline: address allocation, recoverable block scanning, confirmation, idempotent double-entry crediting, reorg reversal, and reconciliation.
+A modular Java backend implementing auditable Sepolia deposits and rights-aware IP revenue settlement: address allocation, recoverable block scanning, eligibility snapshots, idempotent double-entry posting, reorg reversal and restoration, reconciliation, and proof packaging.
 
-## Sprint 8 status
+## Sprint 10 status
 
-Sprint 8 adds hash-bound structured license terms, deterministic payment obligations, escrow payment
-matching, immutable eligibility snapshots, and reorg-safe reevaluation while preserving the Sprint
-1–7 wallet, ledger, and rights-indexing core.
+Sprint 10 exposes the complete rights-to-ledger audit chain, risk and reconciliation status,
+reproducible Settlement Proof Packages, and a financing demonstration dashboard while preserving
+the immutable posting, technical reversal, and canonical restoration semantics from Sprints 7–9.
 
 - Java 21 and Spring Boot 3.5
 - Maven multi-module architecture
@@ -29,6 +29,10 @@ matching, immutable eligibility snapshots, and reorg-safe reevaluation while pre
 - Reorg recovery with orphan retention and idempotent double-entry reversals
 - Ledger snapshot, deposit-ledger, and on-chain custody reconciliation
 - Scanner height/lag, RPC latency/failure, and reconciliation metrics
+- Hash-bound license obligations and immutable settlement eligibility snapshots
+- Deterministic allocation, double-entry settlement, technical reversal, and restoration journals
+- Rights–license–payment–journal audit queries and assurance risk codes
+- SHA-256 Settlement Proof Packages and the `/sprint10-dashboard.html` demonstration surface
 
 ## Modules
 
@@ -99,7 +103,10 @@ The initial schema includes networks, assets, addresses, blocks, transactions, d
 6. Sprint 6: reconciliation, observability, and demonstration scripts
 7. Sprint 7: IP contract indexing and reorg-safe rights projections
 8. Sprint 8: license obligations and settlement eligibility
+9. Sprint 9: deterministic allocation, ledger posting, technical reversal, and restoration
+10. Sprint 10: audit proof packages, end-to-end assurance queries, and financing demonstration
 
 See [Sprint 7 implementation notes](docs/sprint-7.md) for indexing activation and
 [Sprint 8 implementation notes](docs/sprint-8.md) for terms, obligations, APIs, and eligibility
-semantics.
+semantics. Settlement accounting is documented in [Sprint 9](docs/sprint-9.md), with proof,
+dashboard, script, and claims boundaries in [Sprint 10](docs/sprint-10.md).
