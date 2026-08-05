@@ -53,6 +53,17 @@ public class RetryingBlockchainRpcClient implements BlockchainRpcClient {
     }
 
     @Override
+    public String getRuntimeCode(String address, long blockNumber) {
+        return execute(() -> delegate.getRuntimeCode(address, blockNumber));
+    }
+
+    @Override
+    public String getAssetJurisdiction(
+            String registryAddress, BigInteger assetId, long blockNumber) {
+        return execute(() -> delegate.getAssetJurisdiction(registryAddress, assetId, blockNumber));
+    }
+
+    @Override
     public BigInteger getNativeBalance(String address, long blockNumber) {
         return execute(() -> delegate.getNativeBalance(address, blockNumber));
     }

@@ -16,13 +16,19 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import io.ipbreaker.wallet.rights.projection.RightsProjectionRepository;
 
 @Repository
 public class JdbcBlockScanRepository implements BlockScanRepository {
     private final JdbcTemplate jdbcTemplate;
 
-    public JdbcBlockScanRepository(JdbcTemplate jdbcTemplate) {
+    private final RightsProjectionRepository rightsProjectionRepository;
+
+    public JdbcBlockScanRepository(
+            JdbcTemplate jdbcTemplate,
+            RightsProjectionRepository rightsProjectionRepository) {
         this.jdbcTemplate = jdbcTemplate;
+        this.rightsProjectionRepository = rightsProjectionRepository;
     }
 
     @Override
@@ -104,6 +110,7 @@ public class JdbcBlockScanRepository implements BlockScanRepository {
         readCursor(networkId, true);
         verifyLease(networkId, owner);
         reverseCreditedDeposits(networkId, blockNumber);
+        rightsProjectionRepository.rollbackAndRebuild(networkId, blockNumber);
         jdbcTemplate.update(
                 "UPDATE deposit d JOIN chain_block b ON b.id = d.block_id "
                         + "SET d.status = 'REORGED', d.confirmations = 0, "
@@ -256,8 +263,8 @@ public class JdbcBlockScanRepository implements BlockScanRepository {
         jdbcTemplate.update(connection -> {
             PreparedStatement statement = connection.prepareStatement(
                     "INSERT INTO chain_transaction (network_id, block_id, tx_hash, from_address, "
-                            + "to_address, nonce, value_raw, tx_status, transaction_index) "
-                            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            + "to_address, nonce, value_raw, input_data, tx_status, transaction_index) "
+                            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     Statement.RETURN_GENERATED_KEYS);
             statement.setLong(1, networkId);
             statement.setLong(2, blockId);
@@ -266,8 +273,9 @@ public class JdbcBlockScanRepository implements BlockScanRepository {
             statement.setString(5, transaction.toAddress());
             statement.setString(6, transaction.nonce().toString());
             statement.setString(7, transaction.value().toString());
-            statement.setString(8, transaction.receipt().success() ? "SUCCESS" : "REVERTED");
-            statement.setInt(9, transaction.transactionIndex());
+            statement.setString(8, transaction.inputData());
+            statement.setString(9, transaction.receipt().success() ? "SUCCESS" : "REVERTED");
+            statement.setInt(10, transaction.transactionIndex());
             return statement;
         }, keyHolder);
         return generatedId(keyHolder, "transaction");

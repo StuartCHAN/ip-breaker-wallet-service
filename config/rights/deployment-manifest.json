@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "network": "SEPOLIA",
+  "chainId": 11155111,
+  "contractSource": {
+    "repository": "StuartCHAN/ip-breaker-rwa",
+    "commit": "9adaba8f480a980db573bfbd43306142947c033e"
+  },
+  "decoderVersion": "rwa-9adaba8-v1",
+  "status": "PENDING_VERIFICATION",
+  "contracts": [
+    {
+      "type": "IP_ASSET_REGISTRY",
+      "candidateAddress": "0xcde0fe114acbe5b956bc1c0cacfc91cb40c313ef",
+      "deploymentBlock": null,
+      "deploymentTransactionHash": null,
+      "runtimeCodeHash": null,
+      "artifactSha256": null
+    },
+    {
+      "type": "EVIDENCE_REGISTRY",
+      "candidateAddress": "0x95e456dd85b43d006a01f9e7bc9ec367e97e491e",
+      "deploymentBlock": null,
+      "deploymentTransactionHash": null,
+      "runtimeCodeHash": null,
+      "artifactSha256": null
+    },
+    {
+      "type": "LICENSE_ESCROW",
+      "candidateAddress": null,
+      "historicalPartialAddress": "0x50a5e2cC1ceA367b4E8D6dC89f94D0A",
+      "deploymentBlock": null,
+      "deploymentTransactionHash": null,
+      "runtimeCodeHash": null,
+      "artifactSha256": null,
+      "note": "The historical transcript contains an incomplete address; recover it from the deployment transaction."
+    }
+  ]
+}

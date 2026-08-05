@@ -8,9 +8,10 @@
   </parent>
   <groupId>io.ipbreaker.wallet</groupId><artifactId>ip-breaker-wallet-service</artifactId><version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging><name>ip-breaker-wallet-service</name>
-  <description>Auditable CEX wallet backend for Ethereum deposits</description>
+  <description>Rights-aware, reorg-safe settlement and assurance backend for IP-backed assets</description>
   <modules>
     <module>ip-breaker-wallet-common</module><module>ip-breaker-wallet-domain</module>
+    <module>ip-breaker-wallet-rights</module>
     <module>ip-breaker-wallet-application</module><module>ip-breaker-wallet-chain</module>
     <module>ip-breaker-wallet-infrastructure</module><module>ip-breaker-wallet-job</module>
     <module>ip-breaker-wallet-api</module><module>ip-breaker-wallet-bootstrap</module>

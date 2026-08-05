@@ -15,6 +15,8 @@ import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.crypto.Hash;
+import org.web3j.utils.Numeric;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.methods.response.EthBlock;
@@ -68,6 +70,61 @@ public class Web3jBlockchainRpcClient implements BlockchainRpcClient {
         } catch (IOException exception) {
             throw new RpcException("Unable to read native balance for " + address, exception);
         }
+    }
+
+    @Override
+    public String getRuntimeCode(String address, long blockNumber) {
+        try {
+            var response = web3j.ethGetCode(
+                    address, DefaultBlockParameter.valueOf(BigInteger.valueOf(blockNumber))).send();
+            if (response.hasError() || response.getCode() == null) {
+                throw new RpcException("Runtime code RPC returned an error for " + address);
+            }
+            return response.getCode();
+        } catch (IOException exception) {
+            throw new RpcException("Unable to read runtime code for " + address, exception);
+        }
+    }
+
+    @Override
+    public String getAssetJurisdiction(
+            String registryAddress, BigInteger assetId, long blockNumber) {
+        String selector = Hash.sha3String("getAsset(uint256)").substring(0, 10);
+        String data = selector + Numeric.toHexStringNoPrefixZeroPadded(assetId, 64);
+        try {
+            var response = web3j.ethCall(
+                    org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(
+                            null, registryAddress, data),
+                    DefaultBlockParameter.valueOf(BigInteger.valueOf(blockNumber))).send();
+            if (response.hasError() || response.getValue() == null) {
+                throw new RpcException("Asset lookup RPC returned an error for " + assetId);
+            }
+            return decodeJurisdiction(response.getValue());
+        } catch (IOException exception) {
+            throw new RpcException("Unable to read asset " + assetId, exception);
+        }
+    }
+
+    private String decodeJurisdiction(String encoded) {
+        byte[] bytes = Numeric.hexStringToByteArray(encoded);
+        int firstWord = wordAsInt(bytes, 0);
+        int tupleStart = firstWord == 32 ? 32 : 0;
+        int jurisdictionOffset = wordAsInt(bytes, tupleStart + 4 * 32);
+        int stringStart = Math.addExact(tupleStart, jurisdictionOffset);
+        int length = wordAsInt(bytes, stringStart);
+        int valueStart = Math.addExact(stringStart, 32);
+        if (length < 0 || valueStart + length > bytes.length) {
+            throw new RpcException("Asset lookup returned malformed jurisdiction");
+        }
+        return new String(bytes, valueStart, length, java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    private int wordAsInt(byte[] bytes, int offset) {
+        if (offset < 0 || offset + 32 > bytes.length) {
+            throw new RpcException("Asset lookup returned truncated tuple");
+        }
+        return new BigInteger(1, java.util.Arrays.copyOfRange(bytes, offset, offset + 32))
+                .intValueExact();
     }
 
     @Override
@@ -133,6 +190,7 @@ public class Web3jBlockchainRpcClient implements BlockchainRpcClient {
                 transaction.getTo(),
                 transaction.getNonce(),
                 transaction.getValue(),
+                transaction.getInput(),
                 transaction.getTransactionIndex().intValueExact(),
                 scannedReceipt);
     }
