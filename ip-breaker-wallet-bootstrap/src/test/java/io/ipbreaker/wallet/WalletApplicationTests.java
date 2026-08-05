@@ -8,7 +8,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @SpringBootTest(properties = {
     "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
         + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration,"
-        + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration"
+        + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration",
+    "wallet.rights.verify-contract-code=false"
 })
 class WalletApplicationTests {
     @MockBean

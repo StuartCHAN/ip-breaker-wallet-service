@@ -8,6 +8,15 @@ public interface BlockchainRpcClient {
 
     ScannedBlock getBlock(long blockNumber);
 
+    default String getRuntimeCode(String address, long blockNumber) {
+        throw new UnsupportedOperationException("Runtime code lookup is not implemented");
+    }
+
+    default String getAssetJurisdiction(
+            String registryAddress, BigInteger assetId, long blockNumber) {
+        throw new UnsupportedOperationException("Asset lookup is not implemented");
+    }
+
     default BigInteger getNativeBalance(String address, long blockNumber) {
         throw new UnsupportedOperationException("Native balance lookup is not implemented");
     }

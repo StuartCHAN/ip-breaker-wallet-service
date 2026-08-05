@@ -39,3 +39,9 @@ wallet:
     fixed-delay: ${CONFIRMATION_FIXED_DELAY:7s}
   reconciliation:
     fixed-delay: ${RECONCILIATION_FIXED_DELAY:5m}
+  rights:
+    verify-contract-code: ${RIGHTS_VERIFY_CONTRACT_CODE:true}
+    backfill:
+      batch-size: ${RIGHTS_BACKFILL_BATCH_SIZE:10}
+      lease-duration: ${RIGHTS_BACKFILL_LEASE_DURATION:45s}
+      fixed-delay: ${RIGHTS_BACKFILL_FIXED_DELAY:15s}

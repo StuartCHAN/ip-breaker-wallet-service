@@ -1,11 +1,11 @@
-# IP Breaker Wallet Service
+# IP Breaker Rights-Aware Settlement Backend
 
 A modular Java wallet backend that will implement an auditable Sepolia ETH/ERC-20 deposit pipeline: address allocation, recoverable block scanning, confirmation, idempotent double-entry crediting, reorg reversal, and reconciliation.
 
-## Sprint 6 status
+## Sprint 7 status
 
-Sprint 6 completes the deposit pipeline with three-way reconciliation, persisted differences,
-operational metrics, and a Sepolia demonstration script.
+Sprint 7 adds reorg-safe IP contract event indexing, independent historical backfill, and
+rebuildable rights projections while preserving the Sprint 1–6 wallet and ledger core.
 
 - Java 21 and Spring Boot 3.5
 - Maven multi-module architecture
@@ -37,6 +37,7 @@ operational metrics, and a Sepolia demonstration script.
 | `ip-breaker-wallet-api` | REST controllers, validation, and error mapping |
 | `ip-breaker-wallet-application` | use-case orchestration and transaction boundaries |
 | `ip-breaker-wallet-domain` | business models, state transitions, and invariants |
+| `ip-breaker-wallet-rights` | IP contract events, deterministic decoders, projection and query ports |
 | `ip-breaker-wallet-chain` | Ethereum RPC adapters, block and log parsing |
 | `ip-breaker-wallet-infrastructure` | MySQL, Redis, repository, and outbox adapters |
 | `ip-breaker-wallet-job` | scanning, confirmation, and reconciliation jobs |
@@ -95,5 +96,7 @@ The initial schema includes networks, assets, addresses, blocks, transactions, d
 4. Sprint 4: confirmation state machine and double-entry ledger
 5. Sprint 5: reorg detection, rollback, and ledger reversal
 6. Sprint 6: reconciliation, observability, and demonstration scripts
+7. Sprint 7: IP contract indexing and reorg-safe rights projections
 
-See [Sprint 6 acceptance checklist](docs/sprint-6.md) for the current definition of done.
+See [Sprint 7 implementation notes](docs/sprint-7.md) for activation gates, APIs, and operational
+semantics.
