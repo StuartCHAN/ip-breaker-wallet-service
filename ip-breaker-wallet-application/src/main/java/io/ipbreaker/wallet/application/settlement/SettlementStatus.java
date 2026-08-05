@@ -2,5 +2,8 @@ package io.ipbreaker.wallet.application.settlement;
 
 public enum SettlementStatus {
     PENDING,
-    ELIGIBLE
+    ELIGIBLE,
+    SETTLED,
+    REVERSED,
+    RESTORED
 }

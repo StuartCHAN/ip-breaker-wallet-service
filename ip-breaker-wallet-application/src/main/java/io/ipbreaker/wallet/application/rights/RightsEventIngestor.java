@@ -2,6 +2,7 @@ package io.ipbreaker.wallet.application.rights;
 
 import io.ipbreaker.wallet.application.scan.ScannedBlock;
 import io.ipbreaker.wallet.application.settlement.SettlementEligibilityService;
+import io.ipbreaker.wallet.application.settlement.SettlementLedgerService;
 import io.ipbreaker.wallet.rights.contract.ManagedContract;
 import io.ipbreaker.wallet.rights.contract.ManagedContractRepository;
 import io.ipbreaker.wallet.rights.event.AssetJurisdictionResolver;
@@ -31,6 +32,7 @@ public class RightsEventIngestor {
     private final RightsProjectionRepository projectionRepository;
 
     private final SettlementEligibilityService eligibilityService;
+    private final SettlementLedgerService settlementLedgerService;
 
     private final MeterRegistry meterRegistry;
     private final ContractEventDecoder decoder;
@@ -40,12 +42,14 @@ public class RightsEventIngestor {
             ChainDomainEventRepository eventRepository,
             RightsProjectionRepository projectionRepository,
             SettlementEligibilityService eligibilityService,
+            SettlementLedgerService settlementLedgerService,
             MeterRegistry meterRegistry,
             AssetJurisdictionResolver jurisdictionResolver) {
         this.contractRepository = contractRepository;
         this.eventRepository = eventRepository;
         this.projectionRepository = projectionRepository;
         this.eligibilityService = eligibilityService;
+        this.settlementLedgerService = settlementLedgerService;
         this.meterRegistry = meterRegistry;
         this.decoder = new ContractEventDecoder(jurisdictionResolver);
     }
@@ -81,6 +85,7 @@ public class RightsEventIngestor {
                 try {
                     projectionRepository.apply(saved.event());
                     eligibilityService.onCanonicalEvent(saved.event());
+                    settlementLedgerService.onCanonicalEvent(saved.event());
                 } catch (RuntimeException exception) {
                     meterRegistry.counter("wallet.rights.projection.failures", "projection_type",
                             saved.event().aggregateType() == null ? "NONE"

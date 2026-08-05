@@ -7,6 +7,7 @@ import io.ipbreaker.wallet.application.scan.ScannedBlock;
 import io.ipbreaker.wallet.application.scan.ScannedReceipt;
 import io.ipbreaker.wallet.application.scan.ScannedTransaction;
 import io.ipbreaker.wallet.application.settlement.SettlementEligibilityRepository;
+import io.ipbreaker.wallet.application.settlement.SettlementLedgerService;
 import io.ipbreaker.wallet.rights.projection.RightsProjectionRepository;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -26,14 +27,17 @@ public class JdbcBlockScanRepository implements BlockScanRepository {
     private final RightsProjectionRepository rightsProjectionRepository;
 
     private final SettlementEligibilityRepository eligibilityRepository;
+    private final SettlementLedgerService settlementLedgerService;
 
     public JdbcBlockScanRepository(
             JdbcTemplate jdbcTemplate,
             RightsProjectionRepository rightsProjectionRepository,
-            SettlementEligibilityRepository eligibilityRepository) {
+            SettlementEligibilityRepository eligibilityRepository,
+            SettlementLedgerService settlementLedgerService) {
         this.jdbcTemplate = jdbcTemplate;
         this.rightsProjectionRepository = rightsProjectionRepository;
         this.eligibilityRepository = eligibilityRepository;
+        this.settlementLedgerService = settlementLedgerService;
     }
 
     @Override
@@ -117,6 +121,7 @@ public class JdbcBlockScanRepository implements BlockScanRepository {
         reverseCreditedDeposits(networkId, blockNumber);
         rightsProjectionRepository.rollbackAndRebuild(networkId, blockNumber);
         eligibilityRepository.rollbackAfter(networkId, blockNumber, blockHash);
+        settlementLedgerService.rollbackAfter(networkId, blockNumber, blockHash);
         jdbcTemplate.update(
                 "UPDATE deposit d JOIN chain_block b ON b.id = d.block_id "
                         + "SET d.status = 'REORGED', d.confirmations = 0, "
