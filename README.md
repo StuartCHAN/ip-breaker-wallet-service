@@ -2,10 +2,11 @@
 
 A modular Java wallet backend that will implement an auditable Sepolia ETH/ERC-20 deposit pipeline: address allocation, recoverable block scanning, confirmation, idempotent double-entry crediting, reorg reversal, and reconciliation.
 
-## Sprint 7 status
+## Sprint 8 status
 
-Sprint 7 adds reorg-safe IP contract event indexing, independent historical backfill, and
-rebuildable rights projections while preserving the Sprint 1–6 wallet and ledger core.
+Sprint 8 adds hash-bound structured license terms, deterministic payment obligations, escrow payment
+matching, immutable eligibility snapshots, and reorg-safe reevaluation while preserving the Sprint
+1–7 wallet, ledger, and rights-indexing core.
 
 - Java 21 and Spring Boot 3.5
 - Maven multi-module architecture
@@ -97,6 +98,8 @@ The initial schema includes networks, assets, addresses, blocks, transactions, d
 5. Sprint 5: reorg detection, rollback, and ledger reversal
 6. Sprint 6: reconciliation, observability, and demonstration scripts
 7. Sprint 7: IP contract indexing and reorg-safe rights projections
+8. Sprint 8: license obligations and settlement eligibility
 
-See [Sprint 7 implementation notes](docs/sprint-7.md) for activation gates, APIs, and operational
+See [Sprint 7 implementation notes](docs/sprint-7.md) for indexing activation and
+[Sprint 8 implementation notes](docs/sprint-8.md) for terms, obligations, APIs, and eligibility
 semantics.

@@ -5,6 +5,8 @@ import io.ipbreaker.wallet.application.address.DepositAddressNotFoundException;
 import io.ipbreaker.wallet.application.deposit.DepositNotFoundException;
 import io.ipbreaker.wallet.application.rights.RightsNotFoundException;
 import io.ipbreaker.wallet.application.rights.RightsIndexUnavailableException;
+import io.ipbreaker.wallet.application.settlement.SettlementNotFoundException;
+import io.ipbreaker.wallet.application.settlement.TermsManifestConflictException;
 import io.ipbreaker.wallet.common.api.ApiResponse;
 import io.ipbreaker.wallet.common.error.ErrorCode;
 import jakarta.validation.ConstraintViolationException;
@@ -53,6 +55,20 @@ public class GlobalExceptionHandler {
         HttpStatus status = exception.rebuilding()
                 ? HttpStatus.CONFLICT : HttpStatus.SERVICE_UNAVAILABLE;
         return ResponseEntity.status(status)
+                .body(ApiResponse.failure(error.code(), error.defaultMessage()));
+    }
+
+    @ExceptionHandler(SettlementNotFoundException.class)
+    ResponseEntity<ApiResponse<Void>> handleSettlementNotFound(SettlementNotFoundException exception) {
+        ErrorCode error = ErrorCode.PAYMENT_OBLIGATION_NOT_FOUND;
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.failure(error.code(), error.defaultMessage()));
+    }
+
+    @ExceptionHandler(TermsManifestConflictException.class)
+    ResponseEntity<ApiResponse<Void>> handleTermsConflict(TermsManifestConflictException exception) {
+        ErrorCode error = ErrorCode.TERMS_MANIFEST_CONFLICT;
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.failure(error.code(), error.defaultMessage()));
     }
 
