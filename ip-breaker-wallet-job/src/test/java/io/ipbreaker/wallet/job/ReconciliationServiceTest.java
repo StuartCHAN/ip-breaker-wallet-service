@@ -36,18 +36,24 @@ class ReconciliationServiceTest {
         assertEquals(1, service.reconcileOnChain("SEPOLIA"));
         assertEquals(BigInteger.valueOf(100L), repository.saved.getFirst().expectedAmount());
         assertEquals(BigInteger.valueOf(80L), repository.saved.getFirst().actualAmount());
+        assertEquals("ONCHAIN_PLATFORM", repository.savedCheckType);
+        assertEquals("SEPOLIA", repository.savedNetworkCode);
+        assertEquals(1, repository.savedDifferenceCount);
     }
 
     private static final class FakeRepository implements ReconciliationRepository {
         private List<ReconciliationDifference> saved = new ArrayList<>();
+        private String savedCheckType;
+        private String savedNetworkCode;
+        private int savedDifferenceCount;
 
         @Override
-        public List<ReconciliationDifference> findLedgerBalanceDifferences() {
+        public List<ReconciliationDifference> findLedgerBalanceDifferences(String networkCode) {
             return List.of();
         }
 
         @Override
-        public List<ReconciliationDifference> findDepositLedgerDifferences() {
+        public List<ReconciliationDifference> findDepositLedgerDifferences(String networkCode) {
             return List.of();
         }
 
@@ -65,8 +71,11 @@ class ReconciliationServiceTest {
 
         @Override
         public void replaceResults(
-                String checkType, List<ReconciliationDifference> differences) {
+                String checkType, String networkCode, List<ReconciliationDifference> differences) {
             saved = new ArrayList<>(differences);
+            savedCheckType = checkType;
+            savedNetworkCode = networkCode;
+            savedDifferenceCount = differences.size();
         }
     }
 }

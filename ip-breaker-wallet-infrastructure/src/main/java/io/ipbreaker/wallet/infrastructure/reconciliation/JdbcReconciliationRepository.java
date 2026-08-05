@@ -25,6 +25,7 @@ public class JdbcReconciliationRepository implements ReconciliationRepository {
             JOIN chain_network n ON n.id = a.network_id
             LEFT JOIN ledger_entry le ON le.ledger_account_id = la.id
             LEFT JOIN account_balance ab ON ab.ledger_account_id = la.id
+            WHERE n.network_code = ?
             GROUP BY n.network_code, a.asset_code, la.id, la.account_type,
                      ab.available_amount_raw
             HAVING expected_amount <> actual_amount
@@ -45,7 +46,7 @@ public class JdbcReconciliationRepository implements ReconciliationRepository {
             LEFT JOIN ledger_transaction lt ON lt.id = d.credited_ledger_tx_id
             LEFT JOIN ledger_entry le ON le.ledger_transaction_id = lt.id
             LEFT JOIN ledger_account la ON la.id = le.ledger_account_id
-            WHERE d.status = 'CREDITED'
+            WHERE d.status = 'CREDITED' AND n.network_code = ?
             GROUP BY n.network_code, a.asset_code, d.id, d.amount_raw
             HAVING entry_count <> 2 OR actual_amount <> d.amount_raw * 2
             """;
@@ -57,7 +58,7 @@ public class JdbcReconciliationRepository implements ReconciliationRepository {
     }
 
     @Override
-    public List<ReconciliationDifference> findLedgerBalanceDifferences() {
+    public List<ReconciliationDifference> findLedgerBalanceDifferences(String networkCode) {
         return jdbcTemplate.query(LEDGER_DIFFERENCES, (resultSet, rowNumber) ->
                 new ReconciliationDifference(
                         "LEDGER_BALANCE",
@@ -67,11 +68,11 @@ public class JdbcReconciliationRepository implements ReconciliationRepository {
                         Long.toString(resultSet.getLong("id")),
                         integer(resultSet.getBigDecimal("expected_amount")),
                         integer(resultSet.getBigDecimal("actual_amount")),
-                        "ledger entries differ from balance snapshot"));
+                        "ledger entries differ from balance snapshot"), networkCode);
     }
 
     @Override
-    public List<ReconciliationDifference> findDepositLedgerDifferences() {
+    public List<ReconciliationDifference> findDepositLedgerDifferences(String networkCode) {
         return jdbcTemplate.query(DEPOSIT_DIFFERENCES, (resultSet, rowNumber) ->
                 new ReconciliationDifference(
                         "DEPOSIT_LEDGER",
@@ -81,7 +82,7 @@ public class JdbcReconciliationRepository implements ReconciliationRepository {
                         Long.toString(resultSet.getLong("id")),
                         integer(resultSet.getBigDecimal("amount_raw")).multiply(BigInteger.TWO),
                         integer(resultSet.getBigDecimal("actual_amount")),
-                        "credited deposit does not have exactly one balanced posting"));
+                        "credited deposit does not have exactly one balanced posting"), networkCode);
     }
 
     @Override
@@ -93,7 +94,7 @@ public class JdbcReconciliationRepository implements ReconciliationRepository {
                 JOIN chain_network n ON n.id = wa.network_id
                 JOIN asset a ON a.network_id = n.id
                 JOIN scan_cursor sc ON sc.network_id = n.id
-                WHERE n.network_code = ? AND n.status = 'ENABLED'
+                WHERE n.network_code = ? AND n.status = 'ACTIVE'
                   AND a.deposit_enabled = TRUE
                   AND wa.status IN ('AVAILABLE', 'ASSIGNED')
                 ORDER BY a.id, wa.id
@@ -122,11 +123,12 @@ public class JdbcReconciliationRepository implements ReconciliationRepository {
 
     @Override
     @Transactional
-    public void replaceResults(String checkType, List<ReconciliationDifference> differences) {
+    public void replaceResults(
+            String checkType, String networkCode, List<ReconciliationDifference> differences) {
         jdbcTemplate.update("""
                 UPDATE reconciliation_difference SET status = 'RESOLVED', resolved_at = CURRENT_TIMESTAMP(6)
-                WHERE check_type = ? AND status = 'OPEN'
-                """, checkType);
+                WHERE check_type = ? AND network_code = ? AND status = 'OPEN'
+                """, checkType, networkCode);
         for (ReconciliationDifference difference : differences) {
             jdbcTemplate.update("""
                     INSERT INTO reconciliation_difference
@@ -143,6 +145,13 @@ public class JdbcReconciliationRepository implements ReconciliationRepository {
                     difference.subjectType(), difference.subjectKey(), difference.expectedAmount(),
                     difference.actualAmount(), difference.details());
         }
+        jdbcTemplate.update("""
+                INSERT INTO reconciliation_checkpoint
+                    (check_type, network_code, difference_count, completed_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP(6))
+                ON DUPLICATE KEY UPDATE difference_count = VALUES(difference_count),
+                    completed_at = VALUES(completed_at)
+                """, checkType, networkCode, differences.size());
     }
 
     private BigInteger integer(BigDecimal value) {

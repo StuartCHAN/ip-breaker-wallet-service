@@ -8,6 +8,7 @@ public enum ErrorCode {
     LICENSE_AGREEMENT_NOT_FOUND("RIGHTS-404-002", "License agreement not found"),
     PAYMENT_OBLIGATION_NOT_FOUND("SETTLEMENT-404-001", "Payment obligation not found"),
     SETTLEMENT_RECORD_NOT_FOUND("SETTLEMENT-404-002", "Settlement record not found"),
+    SETTLEMENT_AUDIT_NOT_FOUND("AUDIT-404-001", "Settlement audit trail not found"),
     TERMS_MANIFEST_CONFLICT("SETTLEMENT-409-001", "Terms manifest conflicts with on-chain terms"),
     SETTLEMENT_NOT_POSTABLE("SETTLEMENT-409-002", "Settlement is not eligible and clear for posting"),
     PROJECTION_REBUILD_IN_PROGRESS("RIGHTS-409-001", "Projection rebuild in progress"),

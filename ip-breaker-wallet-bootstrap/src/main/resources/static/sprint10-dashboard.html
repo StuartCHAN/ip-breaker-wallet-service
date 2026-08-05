@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IP Breaker · Settlement Assurance</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #eff8f3;
+      --muted: #94a89e;
+      --panel: rgba(12, 30, 25, .82);
+      --line: rgba(136, 237, 190, .16);
+      --mint: #71f2b0;
+      --amber: #ffc66d;
+      --red: #ff7b79;
+      --blue: #82b7ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font: 15px/1.55 Inter, ui-sans-serif, system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(42, 180, 122, .2), transparent 34rem),
+        radial-gradient(circle at 88% 35%, rgba(36, 96, 125, .22), transparent 30rem),
+        #06110e;
+    }
+    main { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 44px 0 72px; }
+    header { display: flex; justify-content: space-between; gap: 24px; align-items: end; }
+    .eyebrow { color: var(--mint); letter-spacing: .14em; text-transform: uppercase; font-size: 12px; }
+    h1 { margin: 6px 0 2px; font-size: clamp(30px, 5vw, 58px); line-height: 1; letter-spacing: -.04em; }
+    .sub { color: var(--muted); max-width: 670px; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; margin: 30px 0 24px; }
+    input, select, button {
+      border: 1px solid var(--line); border-radius: 10px; padding: 11px 14px;
+      background: rgba(8, 22, 18, .9); color: var(--ink); font: inherit;
+    }
+    input { min-width: 180px; }
+    button { cursor: pointer; background: var(--mint); color: #062015; border: 0; font-weight: 750; }
+    button.secondary { background: transparent; color: var(--mint); border: 1px solid rgba(113, 242, 176, .45); }
+    button:disabled { opacity: .55; cursor: wait; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+    .card { grid-column: span 4; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; backdrop-filter: blur(14px); }
+    .wide { grid-column: span 8; }
+    .full { grid-column: 1 / -1; }
+    .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+    .value { font-size: 25px; font-weight: 760; margin-top: 5px; overflow-wrap: anywhere; }
+    .small { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+    .pill { display: inline-flex; border: 1px solid currentColor; border-radius: 999px; padding: 4px 9px; font-size: 12px; margin: 4px 5px 0 0; }
+    .clear { color: var(--mint); } .attention { color: var(--amber); } .blocked, .critical { color: var(--red); }
+    .steps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 16px; }
+    .step { min-height: 90px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
+    .step strong { display: block; margin-top: 8px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
+    code { color: var(--blue); font-size: 12px; overflow-wrap: anywhere; }
+    .empty { color: var(--muted); padding: 28px 0; }
+    .error { color: var(--red); white-space: pre-wrap; }
+    footer { color: var(--muted); margin-top: 22px; font-size: 12px; }
+    @media (max-width: 820px) {
+      header { display: block; }
+      .card, .wide { grid-column: 1 / -1; }
+      .steps { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <div class="eyebrow">Settlement assurance console</div>
+      <h1>权利收入，可证明地结算</h1>
+      <p class="sub">把链上权利、许可条款、付款资格、资金分配和不可变双式分录放在同一条审计链中。</p>
+    </div>
+    <div class="small">Sprint 10 · Audit Proof & Financing Demo</div>
+  </header>
+
+  <section class="controls" aria-label="查询条件">
+    <select id="network" aria-label="Network"><option>SEPOLIA</option></select>
+    <input id="agreement" value="1" inputmode="numeric" aria-label="Agreement ID" placeholder="Agreement ID">
+    <button id="load">加载审计链</button>
+    <button id="proof" class="secondary">生成并下载证明包</button>
+  </section>
+  <div id="message" class="error"></div>
+
+  <section class="grid" id="summary">
+    <article class="card"><div class="label">Overall assurance</div><div class="value" id="overall">—</div><div class="small" id="risks">等待查询</div></article>
+    <article class="card"><div class="label">Settlement / control</div><div class="value" id="state">—</div><div class="small" id="index">Indexer —</div></article>
+    <article class="card"><div class="label">Reconciliation</div><div class="value" id="recon">—</div><div class="small" id="safe">Safe block —</div></article>
+
+    <article class="card full">
+      <div class="label">Rights → license → payment → ledger</div>
+      <div class="steps" id="steps"></div>
+    </article>
+
+    <article class="card wide">
+      <div class="label">Immutable settlement journals</div>
+      <table><thead><tr><th>ID</th><th>Status</th><th>Links</th><th>Ledger TX</th><th>Safe block</th></tr></thead><tbody id="settlements"></tbody></table>
+    </article>
+    <article class="card">
+      <div class="label">Balance check</div>
+      <div class="value" id="balance">—</div>
+      <div class="small" id="balance-detail"></div>
+    </article>
+
+    <article class="card full">
+      <div class="label">Open reconciliation differences</div>
+      <table><thead><tr><th>Check</th><th>Subject</th><th>Expected</th><th>Actual</th><th>Last seen</th></tr></thead><tbody id="differences"></tbody></table>
+    </article>
+  </section>
+  <footer>证明包提供可复现的内容摘要；它不是数字签名、法律意见或独立鉴证报告。</footer>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (value) => String(value ?? '—').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const api = (suffix) => `/api/v1/license-agreements/${encodeURIComponent($('agreement').value)}/${suffix}?network=${encodeURIComponent($('network').value)}`;
+  const getData = async (url, options) => {
+    const response = await fetch(url, options);
+    const body = await response.json();
+    if (!response.ok || body.code !== 'SUCCESS') throw new Error(`${body.code || response.status}: ${body.message || 'Request failed'}`);
+    return body.data;
+  };
+  const statusClass = (status) => String(status || '').toLowerCase();
+  const count = (value) => Array.isArray(value) ? value.length : value && Object.keys(value).length ? 1 : 0;
+
+  function render(assurance, trail) {
+    $('overall').textContent = assurance.overallStatus;
+    $('overall').className = `value ${statusClass(assurance.overallStatus)}`;
+    $('risks').innerHTML = assurance.riskCodes.length
+      ? assurance.riskCodes.map((risk) => `<span class="pill">${esc(risk)}</span>`).join('')
+      : '<span class="pill clear">NO OPEN RISK CODE</span>';
+    $('state').textContent = `${assurance.settlementStatus} / ${assurance.controlStatus}`;
+    $('index').textContent = `Indexer ${assurance.indexStatus}`;
+    $('recon').textContent = assurance.reconciliationStatus;
+    $('recon').className = `value ${assurance.reconciliationStatus === 'MATCHED' ? 'clear' : 'critical'}`;
+    const checks = assurance.reconciliationChecks.map((item) => `${item.checkType}:${item.differenceCount}`).join(' · ');
+    $('safe').textContent = `${checks || 'No completed checks'} · Reconciled ${assurance.lastReconciledAt ?? 'never'} · Safe block ${assurance.safeBlockNumber ?? '—'} · ${assurance.safeBlockHash ?? '—'}`;
+
+    const stepData = [
+      ['01', 'IP Asset', trail.asset?.asset_status, trail.asset?.asset_id],
+      ['02', 'Evidence', `${count(trail.evidence)} record(s)`, trail.asset?.document_hash],
+      ['03', 'License', trail.licenseAgreement?.status, trail.licenseAgreement?.agreement_id],
+      ['04', 'Payment', count(trail.paymentEvent) ? trail.paymentEvent.canonical_status : 'NOT MATCHED', trail.paymentEvent?.tx_hash],
+      ['05', 'Eligibility', trail.paymentObligation?.settlement_status, trail.paymentObligation?.current_snapshot_id],
+      ['06', 'Journal', `${count(trail.settlements)} record(s)`, `${count(trail.ledgerEntries)} entries`]
+    ];
+    $('steps').innerHTML = stepData.map(([no, title, state, ref]) => `<div class="step"><span class="label">${no}</span><strong>${esc(title)}</strong><div>${esc(state)}</div><code>${esc(ref)}</code></div>`).join('');
+
+    $('settlements').innerHTML = trail.settlements.length ? trail.settlements.map((item) => `<tr>
+      <td>${esc(item.settlement_record_id)}</td><td><span class="pill">${esc(item.settlement_status)}</span></td>
+      <td><code>original ${esc(item.original_settlement_id)}<br>reversed by ${esc(item.reversed_by_settlement_id)}<br>restored from ${esc(item.restored_from_reversal_id)}</code></td>
+      <td>${esc(item.ledger_transaction_id)}</td><td>${esc(item.safe_block_number)}<br><code>${esc(item.safe_block_hash)}</code></td>
+    </tr>`).join('') : '<tr><td colspan="5" class="empty">尚无结算分录</td></tr>';
+
+    const totals = new Map();
+    trail.ledgerEntries.forEach((entry) => {
+      const row = totals.get(entry.ledger_transaction_id) || {debit: 0n, credit: 0n};
+      const amount = BigInt(entry.amount_raw);
+      if (entry.direction === 'DEBIT') row.debit += amount; else if (entry.direction === 'CREDIT') row.credit += amount;
+      totals.set(entry.ledger_transaction_id, row);
+    });
+    const balanced = [...totals.values()].every((row) => row.debit === row.credit);
+    $('balance').textContent = totals.size ? (balanced ? 'BALANCED' : 'DIFFERENCE') : 'NO JOURNAL';
+    $('balance').className = `value ${balanced ? 'clear' : 'critical'}`;
+    $('balance-detail').textContent = `${totals.size} journal(s), ${trail.ledgerEntries.length} entry lines`;
+
+    $('differences').innerHTML = assurance.reconciliationDifferences.length
+      ? assurance.reconciliationDifferences.map((item) => `<tr><td>${esc(item.checkType)}</td><td>${esc(item.subjectType)} · ${esc(item.subjectKey)}</td><td>${esc(item.expectedAmount)}</td><td>${esc(item.actualAmount)}</td><td>${esc(item.lastDetectedAt)}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="empty">当前没有未解决的对账差异</td></tr>';
+  }
+
+  async function load() {
+    $('message').textContent = '';
+    $('load').disabled = true;
+    try {
+      const [assurance, trail] = await Promise.all([getData(api('assurance-status')), getData(api('audit-trail'))]);
+      render(assurance, trail);
+    } catch (error) {
+      $('message').textContent = error.message;
+    } finally {
+      $('load').disabled = false;
+    }
+  }
+
+  async function downloadProof() {
+    $('message').textContent = '';
+    $('proof').disabled = true;
+    try {
+      const proof = await getData(api('settlement-proof-package'), {method: 'POST'});
+      const blob = new Blob([JSON.stringify(proof, null, 2)], {type: 'application/json'});
+      const anchor = document.createElement('a');
+      anchor.href = URL.createObjectURL(blob);
+      anchor.download = `settlement-proof-${proof.network}-${proof.agreementId}-${proof.contentHash.slice(2, 10)}.json`;
+      anchor.click();
+      URL.revokeObjectURL(anchor.href);
+    } catch (error) {
+      $('message').textContent = error.message;
+    } finally {
+      $('proof').disabled = false;
+    }
+  }
+  $('load').addEventListener('click', load);
+  $('proof').addEventListener('click', downloadProof);
+</script>
+</body>
+</html>
