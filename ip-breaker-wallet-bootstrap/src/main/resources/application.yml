@@ -37,3 +37,5 @@ wallet:
   confirmation:
     batch-size: ${CONFIRMATION_BATCH_SIZE:100}
     fixed-delay: ${CONFIRMATION_FIXED_DELAY:7s}
+  reconciliation:
+    fixed-delay: ${RECONCILIATION_FIXED_DELAY:5m}

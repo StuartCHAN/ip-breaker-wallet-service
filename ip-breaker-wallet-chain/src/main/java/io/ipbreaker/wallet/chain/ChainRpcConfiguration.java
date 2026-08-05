@@ -1,5 +1,6 @@
 package io.ipbreaker.wallet.chain;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
@@ -27,9 +28,10 @@ public class ChainRpcConfiguration {
     @Bean
     BlockchainRpcClient blockchainRpcClient(
             Web3j web3j,
+            MeterRegistry meterRegistry,
             @Value("${wallet.chain.retry-attempts}") int attempts,
             @Value("${wallet.chain.retry-initial-backoff}") Duration initialBackoff) {
         return new RetryingBlockchainRpcClient(
-                new Web3jBlockchainRpcClient(web3j), attempts, initialBackoff);
+                new Web3jBlockchainRpcClient(web3j), attempts, initialBackoff, meterRegistry);
     }
 }

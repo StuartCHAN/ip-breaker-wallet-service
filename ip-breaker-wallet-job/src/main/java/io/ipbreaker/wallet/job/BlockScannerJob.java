@@ -6,8 +6,12 @@ import io.ipbreaker.wallet.application.scan.ScanCursor;
 import io.ipbreaker.wallet.application.scan.ScanNetwork;
 import io.ipbreaker.wallet.application.scan.ScannedBlock;
 import io.ipbreaker.wallet.chain.BlockchainRpcClient;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -30,11 +34,18 @@ public class BlockScannerJob {
 
     private final String instanceId = UUID.randomUUID().toString();
 
+    private final AtomicLong scannedHeight = new AtomicLong();
+
+    private final AtomicLong safeHeight = new AtomicLong();
+
+    private final Counter failures;
+
     public BlockScannerJob(
             BlockchainRpcClient rpcClient,
             BlockScanRepository repository,
             BlockDepositProcessor depositProcessor,
             ChainReorganizationService reorganizationService,
+            MeterRegistry meterRegistry,
             @Value("${wallet.scanner.network-code}") String networkCode,
             @Value("${wallet.scanner.batch-size}") int batchSize,
             @Value("${wallet.scanner.lease-duration}") Duration leaseDuration) {
@@ -45,6 +56,14 @@ public class BlockScannerJob {
         this.networkCode = networkCode;
         this.batchSize = batchSize;
         this.leaseDuration = leaseDuration;
+        Gauge.builder("wallet.scanner.height", scannedHeight, AtomicLong::get)
+                .description("Last committed scanner height").register(meterRegistry);
+        Gauge.builder("wallet.scanner.safe.height", safeHeight, AtomicLong::get)
+                .description("Latest safe chain height").register(meterRegistry);
+        Gauge.builder("wallet.scanner.lag", this,
+                        job -> Math.max(0L, job.safeHeight.get() - job.scannedHeight.get()))
+                .description("Blocks behind the safe chain height").register(meterRegistry);
+        this.failures = meterRegistry.counter("wallet.scanner.failures");
     }
 
     @Scheduled(fixedDelayString = "${wallet.scanner.fixed-delay}")
@@ -59,9 +78,11 @@ public class BlockScannerJob {
         }
         try {
             ScanCursor cursor = repository.getOrCreateCursor(network);
-            long safeHeight = Math.max(0L, rpcClient.latestBlockNumber()
+            long currentSafeHeight = Math.max(0L, rpcClient.latestBlockNumber()
                     - network.requiredConfirmations());
-            long lastHeight = Math.min(safeHeight, cursor.lastScannedBlock() + batchSize);
+            safeHeight.set(currentSafeHeight);
+            scannedHeight.set(cursor.lastScannedBlock());
+            long lastHeight = Math.min(currentSafeHeight, cursor.lastScannedBlock() + batchSize);
             for (long height = cursor.lastScannedBlock() + 1L; height <= lastHeight; height++) {
                 if (!repository.tryAcquireLease(network.id(), instanceId, leaseDuration)) {
                     throw new IllegalStateException("Scanner lease could not be renewed");
@@ -75,7 +96,11 @@ public class BlockScannerJob {
                     return;
                 }
                 depositProcessor.process(network.id(), instanceId, block);
+                scannedHeight.set(height);
             }
+        } catch (RuntimeException exception) {
+            failures.increment();
+            throw exception;
         } finally {
             repository.releaseLease(network.id(), instanceId);
         }
