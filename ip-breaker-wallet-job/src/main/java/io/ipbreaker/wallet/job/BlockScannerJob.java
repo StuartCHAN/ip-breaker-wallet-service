@@ -20,6 +20,8 @@ public class BlockScannerJob {
 
     private final BlockDepositProcessor depositProcessor;
 
+    private final ChainReorganizationService reorganizationService;
+
     private final String networkCode;
 
     private final int batchSize;
@@ -32,12 +34,14 @@ public class BlockScannerJob {
             BlockchainRpcClient rpcClient,
             BlockScanRepository repository,
             BlockDepositProcessor depositProcessor,
+            ChainReorganizationService reorganizationService,
             @Value("${wallet.scanner.network-code}") String networkCode,
             @Value("${wallet.scanner.batch-size}") int batchSize,
             @Value("${wallet.scanner.lease-duration}") Duration leaseDuration) {
         this.rpcClient = rpcClient;
         this.repository = repository;
         this.depositProcessor = depositProcessor;
+        this.reorganizationService = reorganizationService;
         this.networkCode = networkCode;
         this.batchSize = batchSize;
         this.leaseDuration = leaseDuration;
@@ -63,10 +67,21 @@ public class BlockScannerJob {
                     throw new IllegalStateException("Scanner lease could not be renewed");
                 }
                 ScannedBlock block = rpcClient.getBlock(height);
+                ScanCursor current = repository.getOrCreateCursor(network);
+                if (!current.lastScannedHash().equals(zeroHash())
+                        && !block.parentHash().equals(current.lastScannedHash())) {
+                    reorganizationService.reconcile(
+                            network.id(), instanceId, current, network.startBlock());
+                    return;
+                }
                 depositProcessor.process(network.id(), instanceId, block);
             }
         } finally {
             repository.releaseLease(network.id(), instanceId);
         }
+    }
+
+    private String zeroHash() {
+        return "0x0000000000000000000000000000000000000000000000000000000000000000";
     }
 }

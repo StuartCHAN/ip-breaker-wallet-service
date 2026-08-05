@@ -23,6 +23,13 @@ public record DoubleEntryPosting(List<PostingEntry> entries) {
                 new PostingEntry(userAccountId, "CREDIT", amountRaw)));
     }
 
+    public static DoubleEntryPosting depositReversal(
+            long platformAccountId, long userAccountId, BigInteger amountRaw) {
+        return new DoubleEntryPosting(List.of(
+                new PostingEntry(platformAccountId, "CREDIT", amountRaw),
+                new PostingEntry(userAccountId, "DEBIT", amountRaw)));
+    }
+
     private static BigInteger total(List<PostingEntry> entries, String direction) {
         return entries.stream()
                 .filter(entry -> direction.equals(entry.direction()))

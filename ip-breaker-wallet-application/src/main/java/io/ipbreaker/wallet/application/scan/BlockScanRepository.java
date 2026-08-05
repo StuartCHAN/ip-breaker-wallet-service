@@ -12,5 +12,9 @@ public interface BlockScanRepository {
 
     void saveBlockAndAdvance(long networkId, String owner, ScannedBlock block);
 
+    Optional<String> findCanonicalBlockHash(long networkId, long blockNumber);
+
+    void rollbackToAncestor(long networkId, String owner, long blockNumber, String blockHash);
+
     void releaseLease(long networkId, String owner);
 }

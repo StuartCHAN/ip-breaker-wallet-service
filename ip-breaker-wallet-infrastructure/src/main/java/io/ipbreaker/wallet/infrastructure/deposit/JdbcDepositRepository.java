@@ -37,12 +37,23 @@ public class JdbcDepositRepository implements DepositRepository {
              AND wa.user_id IS NOT NULL
             JOIN chain_block b
               ON b.network_id = a.network_id AND b.block_number = ?
+             AND b.status <> 'ORPHANED'
             WHERE a.network_id = ?
               AND a.deposit_enabled = TRUE
               AND a.asset_type = ?
               AND ((? = 'NATIVE' AND a.contract_address IS NULL)
                    OR (? = 'ERC20' AND a.contract_address = ?))
-            ON DUPLICATE KEY UPDATE id = id
+            ON DUPLICATE KEY UPDATE
+                block_id = IF(status = 'REORGED' AND credited_ledger_tx_id IS NULL,
+                              VALUES(block_id), block_id),
+                block_number = IF(status = 'REORGED' AND credited_ledger_tx_id IS NULL,
+                                  VALUES(block_number), block_number),
+                confirmations = IF(status = 'REORGED' AND credited_ledger_tx_id IS NULL,
+                                   0, confirmations),
+                detected_at = IF(status = 'REORGED' AND credited_ledger_tx_id IS NULL,
+                                 CURRENT_TIMESTAMP(6), detected_at),
+                status = IF(status = 'REORGED' AND credited_ledger_tx_id IS NULL,
+                            'DETECTED', status)
             """;
 
     private final JdbcTemplate jdbcTemplate;

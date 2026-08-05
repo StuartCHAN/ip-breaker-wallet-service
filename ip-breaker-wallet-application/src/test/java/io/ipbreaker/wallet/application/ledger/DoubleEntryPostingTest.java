@@ -8,6 +8,17 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class DoubleEntryPostingTest {
+
+    @Test
+    void depositReversalFlipsDirectionsAndRemainsBalanced() {
+        DoubleEntryPosting posting = DoubleEntryPosting.depositReversal(
+                10L, 20L, BigInteger.valueOf(500L));
+
+        assertEquals("CREDIT", posting.entries().get(0).direction());
+        assertEquals("DEBIT", posting.entries().get(1).direction());
+        assertEquals(posting.entries().get(0).amountRaw(), posting.entries().get(1).amountRaw());
+    }
+
     @Test
     void createsBalancedDepositPosting() {
         DoubleEntryPosting posting = DoubleEntryPosting.deposit(10L, 20L, BigInteger.valueOf(500));
