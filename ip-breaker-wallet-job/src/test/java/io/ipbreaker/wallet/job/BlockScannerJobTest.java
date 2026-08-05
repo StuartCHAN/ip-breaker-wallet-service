@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
 class BlockScannerJobTest {
@@ -46,6 +47,7 @@ class BlockScannerJobTest {
                 repository,
                 processor(repository),
                 new ChainReorganizationService(client, repository),
+                new SimpleMeterRegistry(),
                 "sepolia",
                 25,
                 Duration.ofSeconds(30));
@@ -76,6 +78,7 @@ class BlockScannerJobTest {
                 repository,
                 processor(repository),
                 new ChainReorganizationService(client, repository),
+                new SimpleMeterRegistry(),
                 "SEPOLIA",
                 25,
                 Duration.ofSeconds(30));
@@ -115,6 +118,7 @@ class BlockScannerJobTest {
                 repository,
                 processor(repository),
                 new ChainReorganizationService(client, repository),
+                new SimpleMeterRegistry(),
                 "SEPOLIA",
                 25,
                 Duration.ofSeconds(30));

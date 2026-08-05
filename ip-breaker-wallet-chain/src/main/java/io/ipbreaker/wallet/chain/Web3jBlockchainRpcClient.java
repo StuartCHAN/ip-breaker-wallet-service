@@ -9,6 +9,12 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import org.web3j.abi.FunctionEncoder;
+import org.web3j.abi.FunctionReturnDecoder;
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.Function;
+import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.methods.response.EthBlock;
@@ -47,6 +53,42 @@ public class Web3jBlockchainRpcClient implements BlockchainRpcClient {
             return mapBlock(response.getBlock());
         } catch (IOException exception) {
             throw new RpcException("Unable to read block " + blockNumber, exception);
+        }
+    }
+
+    @Override
+    public BigInteger getNativeBalance(String address, long blockNumber) {
+        try {
+            var response = web3j.ethGetBalance(
+                    address, DefaultBlockParameter.valueOf(BigInteger.valueOf(blockNumber))).send();
+            if (response.hasError() || response.getBalance() == null) {
+                throw new RpcException("Native balance RPC returned an error for " + address);
+            }
+            return response.getBalance();
+        } catch (IOException exception) {
+            throw new RpcException("Unable to read native balance for " + address, exception);
+        }
+    }
+
+    @Override
+    public BigInteger getTokenBalance(String contractAddress, String address, long blockNumber) {
+        Function function = new Function(
+                "balanceOf", List.of(new Address(address)), List.of(new TypeReference<Uint256>() { }));
+        try {
+            var response = web3j.ethCall(
+                    org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(
+                            null, contractAddress, FunctionEncoder.encode(function)),
+                    DefaultBlockParameter.valueOf(BigInteger.valueOf(blockNumber))).send();
+            if (response.hasError()) {
+                throw new RpcException("Token balance RPC returned an error for " + address);
+            }
+            var values = FunctionReturnDecoder.decode(response.getValue(), function.getOutputParameters());
+            if (values.size() != 1) {
+                throw new RpcException("Token balance RPC returned malformed data for " + address);
+            }
+            return (BigInteger) values.getFirst().getValue();
+        } catch (IOException exception) {
+            throw new RpcException("Unable to read token balance for " + address, exception);
         }
     }
 
