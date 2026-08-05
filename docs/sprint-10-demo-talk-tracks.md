@@ -4,10 +4,10 @@
 
 ## 真实主线
 
-| 对象 | 开场问题 | 重点证据 | 收束句 |
+| 您是 | 您可能想问 | 我们的重点证据 | 我们收束总结 |
 | --- | --- | --- | --- |
-| 面试官 | 怎样保证链上入账既幂等又可审计？ | 安全高度、可重建投影、不可变快照、独立平衡分录 | 工程关键是区分链事实失效与法律状态变化 |
-| Hackathon 评委 | 收到一笔钱，为什么不等于可结算收入？ | `SETTLED → REVERSED → RESTORED` 现场闭环 | IP Breaker 是 IP 收入的 settlement assurance layer |
+| 技术专家 | 怎样保证链上入账既幂等又可审计？ | 安全高度、可重建投影、不可变快照、独立平衡分录 | 工程关键是区分链事实失效与法律状态变化 |
+| 同行大众评委 | 收到一笔钱，为什么不等于可结算收入？ | `SETTLED → REVERSED → RESTORED` 现场闭环 | IP Breaker 是 IP 收入的 settlement assurance layer |
 | 投资者 | 怎样降低 IP 许可现金流的核验成本？ | 权利—许可—付款—分录全链路与风险／对账状态 | 先建立可信收入事实，再承接合规融资产品层 |
 
 ```mermaid
@@ -18,7 +18,7 @@ flowchart TB
     J --> A["风险、对账与证明包"]
 ```
 
-讲解时建议始终按这条因果链推进，不要从模块列表或技术栈开始。
+* Tips：记得讲解时建议始终按这条因果链推进，不要从模块列表或技术栈开始。
 
 ## 一、pitching points 来说
 
@@ -41,13 +41,13 @@ Sprint 10 把这些事实组合成一个全链路审计查询和 Settlement Proo
 
 IP Breaker 把一笔 IP 许可收入从“链上收到了钱”提升为“这笔收入为什么可以被结算”。
 
-演示中，我们先创建一份与链上 `termsHash` 一致的结构化许可条款。许可付款进入托管后，后端把 IP 资产、证据、许可双方、付款人、金额和安全区块固化为资格快照；只有全部匹配，才生成分配计划和双式分录。
+若有幸为您演示，我们会先创建一份与链上 `termsHash` 一致的结构化许可条款。许可付款进入托管后，后端把 IP 资产、证据、许可双方、付款人、金额和安全区块固化为资格快照；只有全部匹配，才生成分配计划和双式分录。
 
-接着我们模拟一次区块重组。原付款和资格快照被标记为孤块，系统不删除历史，而是自动生成完全反向的冲正 journal。付款在新规范链重新出现后，系统以新的资格快照生成恢复 journal。三组分录彼此独立、各自平衡，并保留原始、冲正、恢复的关联 ID。
+接着我们会模拟一次区块重组。原付款和资格快照被标记为孤块，系统不删除历史，而是自动生成完全反向的冲正 journal。付款在新规范链重新出现后，系统以新的资格快照生成恢复 journal。三组分录彼此独立、各自平衡，并保留原始、冲正、恢复的关联 ID。
 
 最后，Settlement Assurance Dashboard 展示权利、许可、付款、资格和账本全链路，标出 `HELD / DISPUTED`、未知事件、索引重建、孤块快照和对账差异；一键导出的 Proof Package 带 SHA-256 内容摘要，可交给财务、投资人或审计系统复核。
 
-一句话收束：**IP Breaker is the settlement assurance layer for IP revenue—not “NFT equals ownership,” but verifiable rights, payment eligibility, and auditable revenue accounting.**
+我们会一句话收束：**IP Breaker is the settlement assurance layer for IP revenue—not “NFT equals ownership,” but verifiable rights, payment eligibility, and auditable revenue accounting.**
 
 ## 三、对Angel Investor来说
 
@@ -57,7 +57,7 @@ IP Breaker 提供一层面向 IP 收入的结算保障基础设施。系统把�
 
 早期产品聚焦单链、单结算资产和已经存在许可现金流的场景，先把 escrow、revenue proof 和 reconciliation 跑通。它可以作为 IP 融资平台、版权许可市场和托管机构的后端 assurance layer，降低尽调、持续监控和收益核验的成本。
 
-我们对投资者的表述边界：当前 Proof Package 是平台生成的加密摘要审计包，不应表述为独立审计意见；代币化、融资发行和多方分润属于后续建立在可信收入事实之上的产品层。
+而我们对投资者的表述边界是：当前 Proof Package 是平台生成的加密摘要审计包，不应表述为独立审计意见；代币化、融资发行和多方分润属于后续建立在可信收入事实之上的产品层。
 
 ## 四、演示画面提示卡
 
@@ -69,4 +69,4 @@ IP Breaker 提供一层面向 IP 收入的结算保障基础设施。系统把�
 | “没有差异不等于已经对账” | Reconciliation | `MATCHED / DIFFERENCE / UNKNOWN` 及完成检查点 |
 | “输出可复核材料” | Proof Package | 规范化内容与 SHA-256 digest，并主动说明用途边界 |
 
-完整操作顺序见 [Live demonstration guide](demo-guide.md)，系统设计见 [Architecture and trust boundaries](architecture.md)。
+完整操作顺序请移步见 [Live demonstration guide](demo-guide.md)，系统设计请见 [Architecture and trust boundaries](architecture.md)。
