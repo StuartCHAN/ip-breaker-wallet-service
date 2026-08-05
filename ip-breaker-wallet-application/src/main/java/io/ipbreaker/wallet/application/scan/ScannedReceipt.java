@@ -1,6 +1,7 @@
 package io.ipbreaker.wallet.application.scan;
 
 import java.math.BigInteger;
+import java.util.List;
 
 public record ScannedReceipt(
         String transactionHash,
@@ -8,5 +9,9 @@ public record ScannedReceipt(
         int transactionIndex,
         boolean success,
         BigInteger gasUsed,
-        String contractAddress) {
+        String contractAddress,
+        List<ScannedLog> logs) {
+    public ScannedReceipt {
+        logs = List.copyOf(logs);
+    }
 }

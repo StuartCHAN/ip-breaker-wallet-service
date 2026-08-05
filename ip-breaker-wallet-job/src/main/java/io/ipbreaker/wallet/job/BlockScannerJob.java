@@ -1,5 +1,6 @@
 package io.ipbreaker.wallet.job;
 
+import io.ipbreaker.wallet.application.deposit.BlockDepositProcessor;
 import io.ipbreaker.wallet.application.scan.BlockScanRepository;
 import io.ipbreaker.wallet.application.scan.ScanCursor;
 import io.ipbreaker.wallet.application.scan.ScanNetwork;
@@ -17,6 +18,8 @@ public class BlockScannerJob {
 
     private final BlockScanRepository repository;
 
+    private final BlockDepositProcessor depositProcessor;
+
     private final String networkCode;
 
     private final int batchSize;
@@ -28,11 +31,13 @@ public class BlockScannerJob {
     public BlockScannerJob(
             BlockchainRpcClient rpcClient,
             BlockScanRepository repository,
+            BlockDepositProcessor depositProcessor,
             @Value("${wallet.scanner.network-code}") String networkCode,
             @Value("${wallet.scanner.batch-size}") int batchSize,
             @Value("${wallet.scanner.lease-duration}") Duration leaseDuration) {
         this.rpcClient = rpcClient;
         this.repository = repository;
+        this.depositProcessor = depositProcessor;
         this.networkCode = networkCode;
         this.batchSize = batchSize;
         this.leaseDuration = leaseDuration;
@@ -58,7 +63,7 @@ public class BlockScannerJob {
                     throw new IllegalStateException("Scanner lease could not be renewed");
                 }
                 ScannedBlock block = rpcClient.getBlock(height);
-                repository.saveBlockAndAdvance(network.id(), instanceId, block);
+                depositProcessor.process(network.id(), instanceId, block);
             }
         } finally {
             repository.releaseLease(network.id(), instanceId);

@@ -1,6 +1,7 @@
 package io.ipbreaker.wallet.chain;
 
 import io.ipbreaker.wallet.application.scan.ScannedBlock;
+import io.ipbreaker.wallet.application.scan.ScannedLog;
 import io.ipbreaker.wallet.application.scan.ScannedReceipt;
 import io.ipbreaker.wallet.application.scan.ScannedTransaction;
 import java.io.IOException;
@@ -76,7 +77,14 @@ public class Web3jBlockchainRpcClient implements BlockchainRpcClient {
                 receipt.getTransactionIndex().intValueExact(),
                 receipt.isStatusOK(),
                 receipt.getGasUsed(),
-                receipt.getContractAddress());
+                receipt.getContractAddress(),
+                receipt.getLogs().stream()
+                        .map(log -> new ScannedLog(
+                                log.getAddress(),
+                                log.getLogIndex().intValueExact(),
+                                log.getTopics(),
+                                log.getData()))
+                        .toList());
         return new ScannedTransaction(
                 transaction.getHash(),
                 transaction.getFrom(),

@@ -2,7 +2,7 @@
 
 A modular Java wallet backend that will implement an auditable Sepolia ETH/ERC-20 deposit pipeline: address allocation, recoverable block scanning, confirmation, idempotent double-entry crediting, reorg reversal, and reconciliation.
 
-## Sprint 1 status
+## Sprint 3 status
 
 Sprint 1 adds database-backed Sepolia deposit-address allocation and asset discovery on top of the Sprint 0 foundation.
 
@@ -19,6 +19,9 @@ Sprint 1 adds database-backed Sepolia deposit-address allocation and asset disco
 - Lowercase Ethereum storage with EIP-55 API display
 - `AddressProvider` and `Signer` security-boundary interfaces
 - Restart-safe Sepolia block scanning with database leases and bounded RPC retries
+- Native ETH and standard ERC-20 deposit recognition
+- Idempotency for multiple transfer logs in the same transaction
+- User deposit-list and deposit-detail APIs
 
 ## Modules
 
@@ -87,4 +90,4 @@ The initial schema includes networks, assets, addresses, blocks, transactions, d
 5. Sprint 5: reorg detection, rollback, and ledger reversal
 6. Sprint 6: reconciliation, observability, and demonstration scripts
 
-See [Sprint 2 acceptance checklist](docs/sprint-2.md) for the current definition of done.
+See [Sprint 3 acceptance checklist](docs/sprint-3.md) for the current definition of done.

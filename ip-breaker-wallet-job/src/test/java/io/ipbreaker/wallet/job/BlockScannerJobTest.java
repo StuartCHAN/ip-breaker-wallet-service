@@ -2,11 +2,16 @@ package io.ipbreaker.wallet.job;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.ipbreaker.wallet.application.deposit.BlockDepositProcessor;
+import io.ipbreaker.wallet.application.deposit.DepositCandidate;
+import io.ipbreaker.wallet.application.deposit.DepositDetector;
+import io.ipbreaker.wallet.application.deposit.DepositRepository;
 import io.ipbreaker.wallet.application.scan.BlockScanRepository;
 import io.ipbreaker.wallet.application.scan.ScanCursor;
 import io.ipbreaker.wallet.application.scan.ScanNetwork;
 import io.ipbreaker.wallet.application.scan.ScannedBlock;
 import io.ipbreaker.wallet.chain.BlockchainRpcClient;
+import io.ipbreaker.wallet.domain.deposit.Deposit;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -35,7 +40,12 @@ class BlockScannerJobTest {
             }
         };
         BlockScannerJob job = new BlockScannerJob(
-                client, repository, "sepolia", 25, Duration.ofSeconds(30));
+                client,
+                repository,
+                processor(repository),
+                "sepolia",
+                25,
+                Duration.ofSeconds(30));
 
         job.scan();
 
@@ -59,7 +69,12 @@ class BlockScannerJobTest {
             }
         };
         BlockScannerJob job = new BlockScannerJob(
-                client, repository, "SEPOLIA", 25, Duration.ofSeconds(30));
+                client,
+                repository,
+                processor(repository),
+                "SEPOLIA",
+                25,
+                Duration.ofSeconds(30));
 
         job.scan();
 
@@ -68,6 +83,25 @@ class BlockScannerJobTest {
 
     private static String hash(long height) {
         return "0x" + String.format("%064x", height);
+    }
+
+    private static BlockDepositProcessor processor(BlockScanRepository repository) {
+        DepositRepository deposits = new DepositRepository() {
+            @Override
+            public void insertMatching(long networkId, DepositCandidate candidate) {
+            }
+
+            @Override
+            public List<Deposit> findByUserId(String userId) {
+                return List.of();
+            }
+
+            @Override
+            public Optional<Deposit> findById(long depositId) {
+                return Optional.empty();
+            }
+        };
+        return new BlockDepositProcessor(repository, deposits, new DepositDetector());
     }
 
     private static final class FakeRepository implements BlockScanRepository {
