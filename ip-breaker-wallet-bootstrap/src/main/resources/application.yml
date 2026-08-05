@@ -22,4 +22,15 @@ management:
         enabled: true
 server:
   shutdown: graceful
-
+wallet:
+  chain:
+    rpc-url: ${SEPOLIA_RPC_URL:http://localhost:8545}
+    connect-timeout: ${RPC_CONNECT_TIMEOUT:5s}
+    read-timeout: ${RPC_READ_TIMEOUT:15s}
+    retry-attempts: ${RPC_RETRY_ATTEMPTS:4}
+    retry-initial-backoff: ${RPC_RETRY_INITIAL_BACKOFF:250ms}
+  scanner:
+    network-code: ${SCANNER_NETWORK_CODE:SEPOLIA}
+    batch-size: ${SCANNER_BATCH_SIZE:25}
+    lease-duration: ${SCANNER_LEASE_DURATION:45s}
+    fixed-delay: ${SCANNER_FIXED_DELAY:5s}
