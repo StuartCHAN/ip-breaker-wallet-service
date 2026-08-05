@@ -9,8 +9,8 @@ public record DoubleEntryPosting(List<PostingEntry> entries) {
         if (entries.size() < 2) {
             throw new IllegalArgumentException("A posting requires at least two entries");
         }
-        BigInteger debits = total("DEBIT");
-        BigInteger credits = total("CREDIT");
+        BigInteger debits = total(entries, "DEBIT");
+        BigInteger credits = total(entries, "CREDIT");
         if (!debits.equals(credits)) {
             throw new IllegalArgumentException("Ledger posting is not balanced");
         }
@@ -23,7 +23,7 @@ public record DoubleEntryPosting(List<PostingEntry> entries) {
                 new PostingEntry(userAccountId, "CREDIT", amountRaw)));
     }
 
-    private BigInteger total(String direction) {
+    private static BigInteger total(List<PostingEntry> entries, String direction) {
         return entries.stream()
                 .filter(entry -> direction.equals(entry.direction()))
                 .map(PostingEntry::amountRaw)
