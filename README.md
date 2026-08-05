@@ -18,6 +18,7 @@ Sprint 1 adds database-backed Sepolia deposit-address allocation and asset disco
 - Idempotent deposit-address allocation and lookup APIs
 - Lowercase Ethereum storage with EIP-55 API display
 - `AddressProvider` and `Signer` security-boundary interfaces
+- Restart-safe Sepolia block scanning with database leases and bounded RPC retries
 
 ## Modules
 
@@ -86,4 +87,4 @@ The initial schema includes networks, assets, addresses, blocks, transactions, d
 5. Sprint 5: reorg detection, rollback, and ledger reversal
 6. Sprint 6: reconciliation, observability, and demonstration scripts
 
-See [Sprint 1 acceptance checklist](docs/sprint-1.md) for the current definition of done.
+See [Sprint 2 acceptance checklist](docs/sprint-2.md) for the current definition of done.
