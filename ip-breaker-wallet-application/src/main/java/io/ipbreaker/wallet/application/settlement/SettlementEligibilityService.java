@@ -17,11 +17,14 @@ import org.web3j.utils.Numeric;
 @Service
 public class SettlementEligibilityService {
     private final SettlementEligibilityRepository repository;
+    private final SettlementLedgerService ledgerService;
     private final ObjectMapper canonicalMapper = new ObjectMapper()
             .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 
-    public SettlementEligibilityService(SettlementEligibilityRepository repository) {
+    public SettlementEligibilityService(
+            SettlementEligibilityRepository repository, SettlementLedgerService ledgerService) {
         this.repository = repository;
+        this.ledgerService = ledgerService;
     }
 
     @Transactional
@@ -29,8 +32,10 @@ public class SettlementEligibilityService {
             String networkCode, BigInteger agreementId, TermsManifest manifest) {
         validate(agreementId, manifest);
         TermsManifestHash prepared = prepare(manifest);
-        return repository.registerManifest(
+        ObligationView obligation = repository.registerManifest(
                 networkCode, agreementId, manifest, prepared.manifestHash(), prepared.canonicalJson());
+        ledgerService.postIfEligible(networkCode, agreementId);
+        return repository.find(networkCode, agreementId).orElse(obligation);
     }
 
     public TermsManifestHash prepare(TermsManifest manifest) {

@@ -174,7 +174,9 @@ public class JdbcSettlementEligibilityRepository implements SettlementEligibilit
         long snapshotId = insertSnapshot(input, payment, decision, reasons,
                 safeBlockOverride, safeBlockHashOverride);
         jdbcTemplate.update(
-                "UPDATE payment_obligation SET settlement_status = ?, matched_payment_event_id = ?, "
+                "UPDATE payment_obligation SET settlement_status = CASE "
+                        + "WHEN settlement_status IN ('PENDING', 'ELIGIBLE') THEN ? "
+                        + "ELSE settlement_status END, matched_payment_event_id = ?, "
                         + "current_snapshot_id = ?, version = version + 1 WHERE id = ?",
                 decision == EligibilityDecision.ELIGIBLE
                         ? SettlementStatus.ELIGIBLE.name() : SettlementStatus.PENDING.name(),

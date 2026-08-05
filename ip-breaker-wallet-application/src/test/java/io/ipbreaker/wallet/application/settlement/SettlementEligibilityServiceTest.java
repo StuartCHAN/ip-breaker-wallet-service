@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.ipbreaker.wallet.rights.event.ChainDomainEvent;
 import java.math.BigInteger;
 import java.util.Optional;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class SettlementEligibilityServiceTest {
@@ -16,7 +17,7 @@ class SettlementEligibilityServiceTest {
     @Test
     void canonicalHashIsDeterministicAndNormalizesAddresses() {
         FakeRepository repository = new FakeRepository();
-        SettlementEligibilityService service = new SettlementEligibilityService(repository);
+        SettlementEligibilityService service = service(repository);
         TermsManifest lower = manifest(LICENSOR, LICENSEE, "NATIVE");
         TermsManifest upper = manifest("0x" + LICENSOR.substring(2).toUpperCase(),
                 "0x" + LICENSEE.substring(2).toUpperCase(), "NATIVE");
@@ -31,7 +32,7 @@ class SettlementEligibilityServiceTest {
 
     @Test
     void rejectsCurrencyNotSupportedByLicenseEscrow() {
-        SettlementEligibilityService service = new SettlementEligibilityService(new FakeRepository());
+        SettlementEligibilityService service = service(new FakeRepository());
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.prepare(manifest(LICENSOR, LICENSEE, "ERC20")));
@@ -40,7 +41,7 @@ class SettlementEligibilityServiceTest {
     @Test
     void registrationPassesCanonicalHashToRepository() {
         FakeRepository repository = new FakeRepository();
-        SettlementEligibilityService service = new SettlementEligibilityService(repository);
+        SettlementEligibilityService service = service(repository);
         TermsManifest terms = manifest(LICENSOR, LICENSEE, "NATIVE");
 
         service.register("SEPOLIA", BigInteger.TEN, terms);
@@ -52,6 +53,36 @@ class SettlementEligibilityServiceTest {
     private TermsManifest manifest(String licensor, String licensee, String currency) {
         return new TermsManifest(1, 1, BigInteger.ONE, licensor, licensee, licensee, licensor,
                 currency, BigInteger.valueOf(1000));
+    }
+
+    private SettlementEligibilityService service(FakeRepository repository) {
+        return new SettlementEligibilityService(
+                repository, new SettlementLedgerService(new FakeLedgerRepository()));
+    }
+
+    private static final class FakeLedgerRepository implements SettlementLedgerRepository {
+        @Override
+        public Optional<SettlementView> postEligible(String networkCode, BigInteger agreementId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public void settleOrRestore(ChainDomainEvent trigger) {
+        }
+
+        @Override
+        public void reverseOrphaned(long networkId, long ancestorBlock, String ancestorBlockHash) {
+        }
+
+        @Override
+        public Optional<SettlementView> find(String networkCode, BigInteger agreementId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public List<SettlementJournalView> journals(long settlementId) {
+            return List.of();
+        }
     }
 
     private static final class FakeRepository implements SettlementEligibilityRepository {

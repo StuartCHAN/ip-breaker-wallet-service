@@ -6,6 +6,8 @@ import io.ipbreaker.wallet.application.deposit.DepositNotFoundException;
 import io.ipbreaker.wallet.application.rights.RightsNotFoundException;
 import io.ipbreaker.wallet.application.rights.RightsIndexUnavailableException;
 import io.ipbreaker.wallet.application.settlement.SettlementNotFoundException;
+import io.ipbreaker.wallet.application.settlement.SettlementNotPostableException;
+import io.ipbreaker.wallet.application.settlement.SettlementRecordNotFoundException;
 import io.ipbreaker.wallet.application.settlement.TermsManifestConflictException;
 import io.ipbreaker.wallet.common.api.ApiResponse;
 import io.ipbreaker.wallet.common.error.ErrorCode;
@@ -65,9 +67,25 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.failure(error.code(), error.defaultMessage()));
     }
 
+    @ExceptionHandler(SettlementRecordNotFoundException.class)
+    ResponseEntity<ApiResponse<Void>> handleSettlementRecordNotFound(
+            SettlementRecordNotFoundException exception) {
+        ErrorCode error = ErrorCode.SETTLEMENT_RECORD_NOT_FOUND;
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.failure(error.code(), error.defaultMessage()));
+    }
+
     @ExceptionHandler(TermsManifestConflictException.class)
     ResponseEntity<ApiResponse<Void>> handleTermsConflict(TermsManifestConflictException exception) {
         ErrorCode error = ErrorCode.TERMS_MANIFEST_CONFLICT;
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.failure(error.code(), error.defaultMessage()));
+    }
+
+    @ExceptionHandler(SettlementNotPostableException.class)
+    ResponseEntity<ApiResponse<Void>> handleSettlementNotPostable(
+            SettlementNotPostableException exception) {
+        ErrorCode error = ErrorCode.SETTLEMENT_NOT_POSTABLE;
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.failure(error.code(), error.defaultMessage()));
     }
