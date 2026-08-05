@@ -1,5 +1,12 @@
 # Sprint 10 — Audit Proof and Financing Demo
 
+```mermaid
+flowchart TB
+    T["Rights-to-ledger audit trail"] --> S["Assurance status"]
+    S --> P["Reproducible Proof Package"]
+    P --> D["Read-only demonstration dashboard"]
+```
+
 ## Outcome
 
 Sprint 10 turns the rights-aware settlement data built in Sprints 7–9 into a reviewable assurance surface. It adds no new smart contracts and does not change settlement accounting semantics.
@@ -24,9 +31,31 @@ Sprint 10 turns the rights-aware settlement data built in Sprints 7–9 into a r
 
 ## Assurance semantics
 
+| Status | Trigger examples | Presentation meaning |
+| --- | --- | --- |
+| `CLEAR` | No currently detected system risk code | System checks are currently clear; **not** a legal opinion |
+| `ATTENTION` | Unknown events or reversal awaiting restoration | Review is useful, but the issue is not currently classified as blocking |
+| `BLOCKED` | Index/control gate or reconciliation not run | Do not present the agreement as settlement-ready |
+| `CRITICAL` | Orphaned current snapshot, unbalanced journal, or open reconciliation difference | Immediate technical/accounting investigation is required |
+
+Reconciliation is a separate result:
+
+| State | Meaning |
+| --- | --- |
+| `MATCHED` | All three required checks completed and no difference remains |
+| `DIFFERENCE` | At least one completed comparison found an open difference |
+| `UNKNOWN` | The required reconciliation checkpoints have not all been recorded |
+
 `CLEAR` means no currently detected system risk code. It is not a legal opinion. `BLOCKED` indicates an index, reconciliation-execution, or control gate; `CRITICAL` indicates an orphaned current eligibility snapshot, an unbalanced settlement journal, or an open reconciliation difference; `ATTENTION` covers non-blocking unknown events or a reversal awaiting canonical restoration. Reconciliation remains `UNKNOWN` until all three checks have persisted a completion checkpoint; an empty difference table alone is never treated as evidence of a match.
 
 Legal/business changes remain orthogonal to technical reversals. `HELD` and `DISPUTED` block new posting, while only orphaned chain facts can trigger automated reversal and idempotent restoration.
+
+```mermaid
+flowchart TB
+    O["Orphaned relied-on chain fact"] --> R["Automatic technical reversal"]
+    C["Dispute / hold / later rights change"] --> G["Block or govern future action"]
+    G --> H["Historical journal remains immutable"]
+```
 
 ## Proof package integrity
 
@@ -62,3 +91,9 @@ Flyway V12 adds immutable `settlement_proof_package` records. It stores the exac
 - A state transition changes the proof digest.
 - Every settlement journal shown in the dashboard balances independently.
 - The demo reaches `SETTLED → REVERSED → RESTORED` using a technical reorganization.
+
+## Presentation resources
+
+- [Architecture and trust boundaries](architecture.md)
+- [Live demonstration guide](demo-guide.md)
+- [Interview, Hackathon, and investor talk tracks](sprint-10-demo-talk-tracks.md)

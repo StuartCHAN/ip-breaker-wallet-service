@@ -6,6 +6,14 @@ an immutable domain-event journal, and builds rebuildable asset, evidence, and e
 projections. It does not create settlement obligations, distribute revenue, or make legal-validity
 decisions.
 
+```mermaid
+flowchart TB
+    L["Managed-contract logs"] --> J["Immutable domain-event journal"]
+    J --> P["Current + historical rights projections"]
+    P --> Q["Rights and timeline APIs"]
+    J --> O["Unknown events retained explicitly"]
+```
+
 ## Delivered
 
 - `ip-breaker-wallet-rights`: managed-contract catalog, pinned topic decoder, canonical payload hash,
@@ -26,6 +34,13 @@ decisions.
   - `GET /api/v1/license-agreements/{agreementId}`
 
 ## Activation gate
+
+```mermaid
+flowchart TB
+    M["Deployment manifest"] --> C["Runtime code-hash verification"]
+    C --> B["Historical backfill complete"]
+    B --> R["Rights queries READY"]
+```
 
 No historical candidate address is seeded as `ACTIVE`. Complete
 `config/rights/deployment-manifest.json`, compare deployed runtime bytecode with the pinned contract
@@ -52,6 +67,20 @@ INSERT INTO chain_contract (
   required canonical history.
 - Public timelines return canonical events only and use an opaque keyset cursor.
 - Amounts and uint256 identifiers remain decimal strings/`BigInteger`; no floating point is used.
+
+### Reorganization rule
+
+```mermaid
+flowchart TB
+    X["Parent-hash mismatch"] --> A["Find common ancestor"]
+    A --> O["Mark post-ancestor events/history ORPHANED"]
+    O --> D["Rebuild affected projections deterministically"]
+    D --> C["Continue from canonical chain"]
+```
+
+Even when an orphaned block contains only unknown events and no aggregate projection can be rebuilt,
+those events are still marked `ORPHANED`; “nothing to project” never leaves them classified as
+canonical facts.
 
 ## Verification
 
