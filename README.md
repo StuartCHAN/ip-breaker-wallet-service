@@ -25,6 +25,8 @@ The system does not treat an IP NFT as legal ownership, and it does not treat `L
 
 ## Why this is different
 
+On-chain payment is not settlement-ready revenue. IP Breaker verifies rights, terms, payer, and amount before posting immutable journals—with automatic reversal and recovery for chain reorganizations.
+
 | Question | Typical wallet / NFT demo | IP Breaker |
 | --- | --- | --- |
 | What does a payment prove? | A transfer happened | A transfer happened **and** is separately tested against rights, terms, payer, asset, and amount |
